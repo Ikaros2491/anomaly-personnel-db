@@ -362,6 +362,13 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
 
-app.listen(port, () => {
-  console.log(`ANOREP API running on http://localhost:${port}`)
-})
+export function startServer() {
+  app.listen(port, () => {
+    console.log(`ANOREP API running on http://localhost:${port}`)
+  })
+}
+
+const entryScript = process.argv[1] ?? ''
+if (entryScript.endsWith('index.ts') || entryScript.endsWith('index.js')) {
+  startServer()
+}

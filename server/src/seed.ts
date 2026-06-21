@@ -4,11 +4,23 @@ import { prisma } from './db.js'
 import { BUILTIN_PERSONNEL, SEED_USERS } from './seedData.js'
 import { personnelToRowData } from './personnel.js'
 
-async function main() {
+async function clearDatabase() {
   await prisma.pendingPersonnelSubmission.deleteMany()
   await prisma.signupRequest.deleteMany()
   await prisma.personnelRecord.deleteMany()
   await prisma.user.deleteMany()
+}
+
+export async function seedDatabase(options: { force?: boolean } = {}) {
+  if (!options.force) {
+    const userCount = await prisma.user.count()
+    if (userCount > 0) {
+      console.log('Database already seeded, skipping.')
+      return
+    }
+  } else {
+    await clearDatabase()
+  }
 
   for (const user of SEED_USERS) {
     const password =
@@ -47,6 +59,10 @@ async function main() {
   }
 
   console.log('Database seeded successfully.')
+}
+
+async function main() {
+  await seedDatabase({ force: true })
 }
 
 main()
