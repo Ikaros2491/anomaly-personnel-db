@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CLEARANCE_LABELS } from '../data/mockDatabase'
 import {
-  deleteOperatorAccount,
-  getAllManagedOperators,
-  setOperatorDeactivated,
-  updateOperatorClearance,
-} from '../data/userStorage'
+  deleteOperatorApi,
+  getOperatorsApi,
+  setOperatorDeactivatedApi,
+  updateOperatorClearanceApi,
+} from '../api/operators'
 import { useAuth } from '../context/AuthContext'
 import { AnorepLogo } from './AnorepLogo'
 import type { ClearanceLevel, ManagedOperator } from '../types'
@@ -20,32 +20,46 @@ type PendingAction =
 
 export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) {
   const { session } = useAuth()
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [operators, setOperators] = useState<ManagedOperator[]>([])
   const [message, setMessage] = useState('')
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [clearanceDraft, setClearanceDraft] = useState<Record<string, ClearanceLevel>>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!session?.isAdministrator) return
+
+    setLoading(true)
+    getOperatorsApi()
+      .then(setOperators)
+      .finally(() => setLoading(false))
+  }, [session])
 
   if (!session?.isAdministrator) return null
 
-  void refreshKey
-  const operators = getAllManagedOperators()
-
-  function refresh() {
-    setRefreshKey((value) => value + 1)
+  async function reload() {
+    const next = await getOperatorsApi()
+    setOperators(next)
   }
 
-  function handleClearanceChange(username: string, clearance: ClearanceLevel) {
-    if (updateOperatorClearance(username, clearance)) {
+  async function handleClearanceChange(username: string, clearance: ClearanceLevel) {
+    try {
+      await updateOperatorClearanceApi(username, clearance)
       setMessage(`Clearance updated for ${username}.`)
-      refresh()
+      await reload()
+    } catch {
+      setMessage(`Failed to update clearance for ${username}.`)
     }
   }
 
-  function handleToggleDeactivate(operator: ManagedOperator) {
+  async function handleToggleDeactivate(operator: ManagedOperator) {
     if (operator.deactivated) {
-      if (setOperatorDeactivated(operator.username, false)) {
+      try {
+        await setOperatorDeactivatedApi(operator.username, false)
         setMessage(`${operator.username} reactivated.`)
-        refresh()
+        await reload()
+      } catch {
+        setMessage(`Failed to reactivate ${operator.username}.`)
       }
       return
     }
@@ -56,21 +70,23 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
     setPendingAction({ type: 'delete', operator })
   }
 
-  function confirmPendingAction() {
+  async function confirmPendingAction() {
     if (!pendingAction) return
 
-    if (pendingAction.type === 'deactivate') {
-      if (setOperatorDeactivated(pendingAction.operator.username, true)) {
+    try {
+      if (pendingAction.type === 'deactivate') {
+        await setOperatorDeactivatedApi(pendingAction.operator.username, true)
         setMessage(`${pendingAction.operator.username} deactivated.`)
-        refresh()
       }
-    }
 
-    if (pendingAction.type === 'delete') {
-      if (deleteOperatorAccount(pendingAction.operator.username)) {
+      if (pendingAction.type === 'delete') {
+        await deleteOperatorApi(pendingAction.operator.username)
         setMessage(`${pendingAction.operator.username} permanently deleted.`)
-        refresh()
       }
+
+      await reload()
+    } catch {
+      setMessage('Action failed.')
     }
 
     setPendingAction(null)
@@ -104,6 +120,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
             {message}
           </p>
         )}
+        {loading && <p className="hint">Loading operators...</p>}
       </section>
 
       {pendingAction && (
@@ -122,7 +139,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
             )}
           </p>
           <div className="delete-confirm-actions">
-            <button className="btn-ghost btn-reject" onClick={confirmPendingAction} type="button">
+            <button className="btn-ghost btn-reject" onClick={() => void confirmPendingAction()} type="button">
               Confirm
             </button>
             <button className="btn-ghost" onClick={() => setPendingAction(null)} type="button">
@@ -183,7 +200,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                     <button
                       className="btn-ghost btn-small"
                       onClick={() =>
-                        handleClearanceChange(
+                        void handleClearanceChange(
                           operator.username,
                           clearanceDraft[operator.username] ?? operator.clearance,
                         )
@@ -197,7 +214,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                   {operator.canModify && (
                     <button
                       className="btn-ghost btn-small"
-                      onClick={() => handleToggleDeactivate(operator)}
+                      onClick={() => void handleToggleDeactivate(operator)}
                       type="button"
                     >
                       {operator.deactivated ? 'Reactivate' : 'Deactivate'}

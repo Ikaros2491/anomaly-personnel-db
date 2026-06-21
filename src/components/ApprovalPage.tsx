@@ -1,17 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
-  approvePersonnelSubmission,
-  loadPendingPersonnel,
-  rejectPersonnelSubmission,
-} from '../data/personnelStorage'
+  approvePersonnelApi,
+  getPendingPersonnelApi,
+  rejectPersonnelApi,
+} from '../api/personnel'
 import {
-  approveSignupRequest,
-  loadPendingSignups,
-  rejectSignupRequest,
-} from '../data/userStorage'
+  approveSignupApi,
+  getPendingSignupsApi,
+  rejectSignupApi,
+} from '../api/operators'
 import { useAuth } from '../context/AuthContext'
 import { AnorepLogo } from './AnorepLogo'
-import type { ClearanceLevel } from '../types'
+import type { ClearanceLevel, PendingPersonnelSubmission, SignupRequest } from '../types'
 
 interface ApprovalPageProps {
   onBack: () => void
@@ -24,50 +24,71 @@ function formatDate(iso: string) {
 export function ApprovalPage({ onBack }: ApprovalPageProps) {
   const { session } = useAuth()
   const [signupClearance, setSignupClearance] = useState<Record<string, ClearanceLevel>>({})
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [pendingSignups, setPendingSignups] = useState<SignupRequest[]>([])
+  const [pendingFiles, setPendingFiles] = useState<PendingPersonnelSubmission[]>([])
   const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!session?.isAdministrator) return
+
+    setLoading(true)
+    Promise.all([getPendingSignupsApi(), getPendingPersonnelApi()])
+      .then(([signups, files]) => {
+        setPendingSignups(signups)
+        setPendingFiles(files)
+      })
+      .finally(() => setLoading(false))
+  }, [session])
 
   if (!session?.isAdministrator) return null
 
-  const pendingSignups = loadPendingSignups()
-  const pendingFiles = loadPendingPersonnel()
-
-  function refresh() {
-    setRefreshKey((k) => k + 1)
+  async function reload() {
+    const [signups, files] = await Promise.all([getPendingSignupsApi(), getPendingPersonnelApi()])
+    setPendingSignups(signups)
+    setPendingFiles(files)
   }
 
-  function handleApproveSignup(requestId: string) {
+  async function handleApproveSignup(requestId: string) {
     const clearance = signupClearance[requestId] ?? 1
-    const account = approveSignupRequest(requestId, clearance)
-    if (account) {
-      setMessage(`Operator ${account.username} approved at clearance ${account.clearance}.`)
-      refresh()
+    try {
+      await approveSignupApi(requestId, clearance)
+      setMessage(`Sign-up request approved at clearance ${clearance}.`)
+      await reload()
+    } catch {
+      setMessage('Failed to approve sign-up request.')
     }
   }
 
-  function handleRejectSignup(requestId: string) {
-    if (rejectSignupRequest(requestId)) {
+  async function handleRejectSignup(requestId: string) {
+    try {
+      await rejectSignupApi(requestId)
       setMessage('Sign-up request denied.')
-      refresh()
+      await reload()
+    } catch {
+      setMessage('Failed to deny sign-up request.')
     }
   }
 
-  function handleApproveFile(requestId: string) {
-    const record = approvePersonnelSubmission(requestId)
-    if (record) {
-      setMessage(`SCP file ${record.id} approved and indexed for search.`)
-      refresh()
+  async function handleApproveFile(requestId: string) {
+    try {
+      await approvePersonnelApi(requestId)
+      setMessage('SCP file approved and indexed for search.')
+      await reload()
+    } catch {
+      setMessage('Failed to approve SCP file.')
     }
   }
 
-  function handleRejectFile(requestId: string) {
-    if (rejectPersonnelSubmission(requestId)) {
+  async function handleRejectFile(requestId: string) {
+    try {
+      await rejectPersonnelApi(requestId)
       setMessage('SCP file submission denied.')
-      refresh()
+      await reload()
+    } catch {
+      setMessage('Failed to deny SCP file.')
     }
   }
-
-  void refreshKey
 
   return (
     <div className="screen approval-screen">
@@ -97,6 +118,7 @@ export function ApprovalPage({ onBack }: ApprovalPageProps) {
             {message}
           </p>
         )}
+        {loading && <p className="hint">Loading pending items...</p>}
       </section>
 
       <section className="approval-section panel">
@@ -143,14 +165,14 @@ export function ApprovalPage({ onBack }: ApprovalPageProps) {
                 <div className="approval-actions">
                   <button
                     className="btn-primary"
-                    onClick={() => handleApproveSignup(request.id)}
+                    onClick={() => void handleApproveSignup(request.id)}
                     type="button"
                   >
                     Approve
                   </button>
                   <button
                     className="btn-ghost btn-reject"
-                    onClick={() => handleRejectSignup(request.id)}
+                    onClick={() => void handleRejectSignup(request.id)}
                     type="button"
                   >
                     Deny
@@ -194,14 +216,14 @@ export function ApprovalPage({ onBack }: ApprovalPageProps) {
                 <div className="approval-actions">
                   <button
                     className="btn-primary"
-                    onClick={() => handleApproveFile(submission.requestId)}
+                    onClick={() => void handleApproveFile(submission.requestId)}
                     type="button"
                   >
                     Approve
                   </button>
                   <button
                     className="btn-ghost btn-reject"
-                    onClick={() => handleRejectFile(submission.requestId)}
+                    onClick={() => void handleRejectFile(submission.requestId)}
                     type="button"
                   >
                     Deny

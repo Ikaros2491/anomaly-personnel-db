@@ -10,7 +10,7 @@ import type { AppView } from './types'
 import './App.css'
 
 function AppContent() {
-  const { session } = useAuth()
+  const { session, loading } = useAuth()
   const [view, setView] = useState<AppView>('home')
 
   useEffect(() => {
@@ -18,6 +18,16 @@ function AppContent() {
       setView('home')
     }
   }, [session?.username])
+
+  if (loading) {
+    return (
+      <div className="welcome-page">
+        <main className="welcome-shell">
+          <p className="welcome-status">Establishing secure channel...</p>
+        </main>
+      </div>
+    )
+  }
 
   if (!session) {
     return <LoginScreen />

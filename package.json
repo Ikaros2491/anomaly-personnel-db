@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "npm run dev --prefix server",
+    "dev:all": "concurrently \"npm run dev:server\" \"npm run dev\"",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:setup": "npm run db:setup --prefix server"
   },
   "dependencies": {
     "react": "^19.1.0",
@@ -16,6 +19,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
+    "concurrently": "^9.1.2",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"
   }

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { CLEARANCE_LABELS, findPersonnel } from '../data/mockDatabase'
+import { CLEARANCE_LABELS } from '../data/mockDatabase'
+import { searchPersonnelApi } from '../api/personnel'
 import { getAccessLabel } from '../data/access'
 import { useAuth } from '../context/AuthContext'
 import { PersonnelFile } from './PersonnelFile'
@@ -17,19 +18,26 @@ export function SearchTerminal({ onBack }: SearchTerminalProps) {
   const [searched, setSearched] = useState(false)
   const [notFoundFlash, setNotFoundFlash] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
+  const [searching, setSearching] = useState(false)
 
   if (!session) return null
 
-  function handleSearch(event: FormEvent) {
+  async function handleSearch(event: FormEvent) {
     event.preventDefault()
     setStatusMessage('')
-    const match = findPersonnel(query)
-    setSearched(true)
-    setResult(match)
+    setSearching(true)
 
-    if (!match) {
-      setNotFoundFlash(true)
-      window.setTimeout(() => setNotFoundFlash(false), 1200)
+    try {
+      const match = await searchPersonnelApi(query)
+      setSearched(true)
+      setResult(match)
+
+      if (!match) {
+        setNotFoundFlash(true)
+        window.setTimeout(() => setNotFoundFlash(false), 1200)
+      }
+    } finally {
+      setSearching(false)
     }
   }
 
@@ -67,8 +75,8 @@ export function SearchTerminal({ onBack }: SearchTerminalProps) {
             type="text"
             value={query}
           />
-          <button className="btn-primary" type="submit">
-            Query Database
+          <button className="btn-primary" disabled={searching} type="submit">
+            {searching ? 'Searching...' : 'Query Database'}
           </button>
         </div>
         <p className="hint">

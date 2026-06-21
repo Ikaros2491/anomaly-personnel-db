@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { submitSignupRequest, isLoginDeactivated } from '../data/userStorage'
+import { submitSignupApi } from '../api/auth'
 import { useAuth } from '../context/AuthContext'
 import { AnorepLogo } from './AnorepLogo'
 import { EMPTY_SIGNUP_FORM } from '../types'
@@ -14,6 +14,7 @@ export function LoginScreen() {
   const [signupForm, setSignupForm] = useState(EMPTY_SIGNUP_FORM)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   function switchMode(next: LoginMode) {
     setMode(next)
@@ -21,32 +22,38 @@ export function LoginScreen() {
     setSuccess('')
   }
 
-  function handleSignIn(event: FormEvent) {
+  async function handleSignIn(event: FormEvent) {
     event.preventDefault()
     setError('')
     setSuccess('')
+    setSubmitting(true)
 
-    if (!login(username, password)) {
+    const result = await login(username, password)
+    setSubmitting(false)
+
+    if (!result.ok) {
       setError(
-        isLoginDeactivated(username, password)
+        result.deactivated
           ? 'ACCESS DENIED — This operator account has been deactivated.'
           : 'ACCESS DENIED — Invalid operator ID or access code.',
       )
-      return
     }
   }
 
-  function handleSignUp(event: FormEvent) {
+  async function handleSignUp(event: FormEvent) {
     event.preventDefault()
     setError('')
     setSuccess('')
+    setSubmitting(true)
 
-    const result = submitSignupRequest(
+    const result = await submitSignupApi(
       signupForm.username,
       signupForm.password,
       signupForm.displayName,
       signupForm.justification,
     )
+
+    setSubmitting(false)
 
     if (!result.ok) {
       setError(result.error)
@@ -142,8 +149,8 @@ export function LoginScreen() {
                   </p>
                 )}
 
-                <button className="btn-primary btn-sign-in" type="submit">
-                  Sign In
+                <button className="btn-primary btn-sign-in" disabled={submitting} type="submit">
+                  {submitting ? 'Authenticating...' : 'Sign In'}
                 </button>
               </form>
             </>
@@ -213,8 +220,8 @@ export function LoginScreen() {
                   </p>
                 )}
 
-                <button className="btn-primary btn-sign-in" type="submit">
-                  Submit Request
+                <button className="btn-primary btn-sign-in" disabled={submitting} type="submit">
+                  {submitting ? 'Submitting...' : 'Submit Request'}
                 </button>
               </form>
             </>

@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  username        String   @unique
+  passwordHash    String
+  displayName     String
+  clearance       Int
+  badgeId         String
+  isAdministrator Boolean  @default(false)
+  isSystem        Boolean  @default(false)
+  deactivated     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+}
+
+model SignupRequest {
+  id            String   @id @default(uuid())
+  username      String   @unique
+  passwordHash  String
+  displayName   String
+  justification String
+  submittedAt   DateTime @default(now())
+}
+
+model PersonnelRecord {
+  recordUid     String   @id
+  designation   String
+  name          String
+  aliasesJson   String
+  picture       String?
+  fieldsJson    String
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  isUserCreated Boolean  @default(false)
+  isBuiltin     Boolean  @default(false)
+}
+
+model PendingPersonnelSubmission {
+  requestId   String   @id @default(uuid())
+  recordJson  String
+  submittedBy String
+  submittedAt DateTime @default(now())
+}

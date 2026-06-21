@@ -1,9 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
-import {
-  addApprovedPersonnel,
-  buildPersonnelRecord,
-  submitPersonnelForApproval,
-} from '../data/personnelStorage'
+import { buildPersonnelRecord, submitPersonnelApi } from '../api/personnel'
 import { useAuth } from '../context/AuthContext'
 import { AnorepLogo } from './AnorepLogo'
 import { CLEARANCE_TAG_INSTRUCTIONS } from '../data/clearanceTags'
@@ -18,6 +14,7 @@ export function AddScpForm({ onBack }: AddScpFormProps) {
   const [form, setForm] = useState<ScpSubmission>(EMPTY_SCP_SUBMISSION)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   if (!session) return null
 
@@ -45,7 +42,7 @@ export function AddScpForm({ onBack }: AddScpFormProps) {
     reader.readAsDataURL(file)
   }
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!session) return
 
@@ -67,18 +64,25 @@ export function AddScpForm({ onBack }: AddScpFormProps) {
     }
 
     const record = buildPersonnelRecord(form, session.displayName)
+    setSubmitting(true)
 
-    if (session.isAdministrator) {
-      addApprovedPersonnel(record)
-      setSuccess(`SCP file ${record.id} registered and indexed immediately.`)
-    } else {
-      submitPersonnelForApproval(record, session.displayName)
-      setSuccess(
-        `SCP file ${record.id} submitted for administrator approval. It will not appear in search until approved.`,
-      )
+    try {
+      const result = await submitPersonnelApi(record)
+
+      if (result.immediate) {
+        setSuccess(`SCP file ${record.id} registered and indexed immediately.`)
+      } else {
+        setSuccess(
+          `SCP file ${record.id} submitted for administrator approval. It will not appear in search until approved.`,
+        )
+      }
+
+      setForm(EMPTY_SCP_SUBMISSION)
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Submission failed.')
+    } finally {
+      setSubmitting(false)
     }
-
-    setForm(EMPTY_SCP_SUBMISSION)
   }
 
   return (
@@ -218,8 +222,12 @@ export function AddScpForm({ onBack }: AddScpFormProps) {
         )}
 
         <div className="form-actions">
-          <button className="btn-primary" type="submit">
-            {session.isAdministrator ? 'Register SCP File' : 'Submit for Approval'}
+          <button className="btn-primary" disabled={submitting} type="submit">
+            {submitting
+              ? 'Submitting...'
+              : session.isAdministrator
+                ? 'Register SCP File'
+                : 'Submit for Approval'}
           </button>
           <button className="btn-ghost" onClick={onBack} type="button">
             Cancel

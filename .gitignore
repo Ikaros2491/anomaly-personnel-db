@@ -2,3 +2,7 @@ node_modules
 dist
 *.local
 .DS_Store
+server/node_modules
+server/prisma/dev.db
+server/prisma/dev.db-journal
+server/.env

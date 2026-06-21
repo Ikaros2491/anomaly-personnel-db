@@ -1,5 +1,6 @@
-import { getUserCreatedCount, getPendingPersonnelCount } from '../data/personnelStorage'
-import { getAllManagedOperators, getPendingSignupCount } from '../data/userStorage'
+import { useEffect, useState } from 'react'
+import { getPersonnelStatsApi } from '../api/personnel'
+import { getOperatorsApi, getPendingSignupsApi } from '../api/operators'
 import { canRegisterScp, getAccessLabel } from '../data/access'
 import { useAuth } from '../context/AuthContext'
 import { AnorepLogo } from './AnorepLogo'
@@ -10,15 +11,34 @@ interface HomeMenuProps {
 
 export function HomeMenu({ onNavigate }: HomeMenuProps) {
   const { session, logout } = useAuth()
+  const [userCreatedCount, setUserCreatedCount] = useState(0)
+  const [pendingApprovals, setPendingApprovals] = useState(0)
+  const [operatorCount, setOperatorCount] = useState(0)
+
+  useEffect(() => {
+    if (!session) return
+
+    getPersonnelStatsApi()
+      .then((stats) => setUserCreatedCount(stats.approvedUserCreated))
+      .catch(() => setUserCreatedCount(0))
+
+    if (session.isAdministrator) {
+      Promise.all([getPendingSignupsApi(), getPersonnelStatsApi(), getOperatorsApi()])
+        .then(([signups, stats, operators]) => {
+          setPendingApprovals(signups.length + stats.pending)
+          setOperatorCount(operators.length)
+        })
+        .catch(() => {
+          setPendingApprovals(0)
+          setOperatorCount(0)
+        })
+    }
+  }, [session])
 
   if (!session) return null
 
   const canManageRecords = canRegisterScp(session)
-  const userCreatedCount = getUserCreatedCount()
   const accessLabel = getAccessLabel(session)
-  const pendingApprovals =
-    session.isAdministrator ? getPendingSignupCount() + getPendingPersonnelCount() : 0
-  const operatorCount = session.isAdministrator ? getAllManagedOperators().length : 0
 
   return (
     <div className="screen home-screen">
@@ -37,7 +57,7 @@ export function HomeMenu({ onNavigate }: HomeMenuProps) {
             </p>
           </div>
         </div>
-        <button className="btn-ghost" onClick={logout} type="button">
+        <button className="btn-ghost" onClick={() => void logout()} type="button">
           Terminate Session
         </button>
       </header>

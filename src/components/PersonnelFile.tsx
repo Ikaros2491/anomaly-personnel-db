@@ -1,8 +1,5 @@
-import { useState } from 'react'
-import {
-  deleteApprovedPersonnel,
-  isApprovedUserRecord,
-} from '../data/personnelStorage'
+import { useEffect, useState } from 'react'
+import { deletePersonnelApi, isUserCreatedRecordApi } from '../api/personnel'
 import { applyClearanceTags } from '../data/clearanceTags'
 import { getAccessLabel } from '../data/access'
 import type { AuthSession, PersonnelField, PersonnelRecord } from '../types'
@@ -41,14 +38,31 @@ function FieldRow({ field, session }: { field: PersonnelField; session: AuthSess
 
 export function PersonnelFile({ record, session, onDeleted }: PersonnelFileProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [canDelete, setCanDelete] = useState(false)
   const showPicture = Boolean(record.picture)
   const accessLabel = getAccessLabel(session)
-  const canDelete = session.isAdministrator && isApprovedUserRecord(record)
 
-  function handleConfirmDelete() {
-    if (!deleteApprovedPersonnel(record)) return
-    setConfirmingDelete(false)
-    onDeleted?.(record)
+  useEffect(() => {
+    if (!session.isAdministrator || !record.recordUid) {
+      setCanDelete(false)
+      return
+    }
+
+    isUserCreatedRecordApi(record.recordUid)
+      .then(setCanDelete)
+      .catch(() => setCanDelete(false))
+  }, [session.isAdministrator, record.recordUid])
+
+  async function handleConfirmDelete() {
+    if (!record.recordUid) return
+
+    try {
+      await deletePersonnelApi(record.recordUid)
+      setConfirmingDelete(false)
+      onDeleted?.(record)
+    } catch {
+      setConfirmingDelete(false)
+    }
   }
 
   return (
@@ -103,7 +117,7 @@ export function PersonnelFile({ record, session, onDeleted }: PersonnelFileProps
                 cannot be undone.
               </p>
               <div className="delete-confirm-actions">
-                <button className="btn-ghost btn-reject" onClick={handleConfirmDelete} type="button">
+                <button className="btn-ghost btn-reject" onClick={() => void handleConfirmDelete()} type="button">
                   Confirm Delete
                 </button>
                 <button
