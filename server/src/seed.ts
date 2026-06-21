@@ -65,11 +65,14 @@ async function main() {
   await seedDatabase({ force: true })
 }
 
-main()
-  .catch((error) => {
-    console.error(error)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+const entryScript = process.argv[1] ?? ''
+if (entryScript.endsWith('seed.ts') || entryScript.endsWith('seed.js')) {
+  main()
+    .catch((error) => {
+      console.error(error)
+      process.exit(1)
+    })
+    .finally(async () => {
+      await prisma.$disconnect()
+    })
+}
