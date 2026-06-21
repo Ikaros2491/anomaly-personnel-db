@@ -9,13 +9,7 @@ A clearance-gated personnel search terminal for a game setting. Operators sign i
 - **Clearance-based redaction** — fields above your clearance show as `[REDACTED]`
 - **Not-found alert** — full-screen red flash + error panel when no record exists
 
-## Demo Accounts
 
-| Username         | Password | Clearance | Notes                          |
-|------------------|----------|-----------|--------------------------------|
-| `intern.lee`     | `trainee`| 1         | Basic status/division only     |
-| `agent.smith`    | `access` | 2         | Classification + assignment    |
-| `director.jones` | `omega`  | 4         | Full psych eval + incident logs|
 
 ## Indexed Personnel
 
