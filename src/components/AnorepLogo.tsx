@@ -8,7 +8,7 @@ export function AnorepLogo({ variant = 'hero', className = '' }: AnorepLogoProps
     <img
       alt="ANOREP logo"
       className={`anorep-logo anorep-logo--${variant} ${className}`.trim()}
-      src="/anorep-logo.png"
+      src={`${import.meta.env.BASE_URL}anorep-logo.png`}
     />
   )
 }
