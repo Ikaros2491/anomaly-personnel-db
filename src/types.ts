@@ -22,6 +22,8 @@ export interface ManagedOperator {
   deactivated: boolean
   canDelete: boolean
   canModify: boolean
+  canGrantAdmin: boolean
+  canRevokeAdmin: boolean
 }
 
 export interface SignupRequest {

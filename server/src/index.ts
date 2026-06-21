@@ -291,7 +291,8 @@ app.post('/api/signups/:id/reject', requireAdmin, async (req, res) => {
 
 // ——— Operators ———
 
-app.get('/api/operators', requireAdmin, async (_req, res) => {
+app.get('/api/operators', requireAdmin, async (req, res) => {
+  const session = (req as express.Request & { session: SessionPayload }).session
   const users = await prisma.user.findMany({ orderBy: { username: 'asc' } })
 
   res.json({
@@ -305,6 +306,11 @@ app.get('/api/operators', requireAdmin, async (_req, res) => {
       deactivated: user.deactivated,
       canDelete: !user.isSystem && !user.isAdministrator,
       canModify: !user.isAdministrator,
+      canGrantAdmin: !user.isAdministrator && !user.deactivated,
+      canRevokeAdmin:
+        user.isAdministrator &&
+        user.username !== session.username &&
+        !user.deactivated,
     })),
   })
 })
@@ -340,6 +346,48 @@ app.patch('/api/operators/:username/deactivate', requireAdmin, async (req, res) 
   await prisma.user.update({
     where: { username },
     data: { deactivated: Boolean(deactivated) },
+  })
+
+  res.json({ ok: true })
+})
+
+app.patch('/api/operators/:username/administrator', requireAdmin, async (req, res) => {
+  const session = (req as express.Request & { session: SessionPayload }).session
+  const { username } = req.params
+  const { isAdministrator } = req.body as { isAdministrator?: boolean }
+
+  if (username === session.username) {
+    res.status(400).json({ error: 'You cannot change your own administrator status.' })
+    return
+  }
+
+  const user = await prisma.user.findUnique({ where: { username } })
+  if (!user) {
+    res.status(404).json({ error: 'Operator not found' })
+    return
+  }
+
+  const grantAdmin = Boolean(isAdministrator)
+
+  if (grantAdmin && user.isAdministrator) {
+    res.json({ ok: true })
+    return
+  }
+
+  if (!grantAdmin && user.isAdministrator) {
+    const adminCount = await prisma.user.count({ where: { isAdministrator: true } })
+    if (adminCount <= 1) {
+      res.status(400).json({ error: 'Cannot remove the last administrator.' })
+      return
+    }
+  }
+
+  await prisma.user.update({
+    where: { username },
+    data: {
+      isAdministrator: grantAdmin,
+      clearance: grantAdmin ? Math.max(user.clearance, 5) : user.clearance,
+    },
   })
 
   res.json({ ok: true })

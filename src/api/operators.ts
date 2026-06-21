@@ -39,3 +39,10 @@ export async function setOperatorDeactivatedApi(username: string, deactivated: b
 export async function deleteOperatorApi(username: string) {
   return apiRequest('/api/operators/' + encodeURIComponent(username), { method: 'DELETE' })
 }
+
+export async function setOperatorAdministratorApi(username: string, isAdministrator: boolean) {
+  return apiRequest('/api/operators/' + encodeURIComponent(username) + '/administrator', {
+    method: 'PATCH',
+    body: JSON.stringify({ isAdministrator }),
+  })
+}

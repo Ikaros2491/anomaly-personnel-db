@@ -3,6 +3,7 @@ import { CLEARANCE_LABELS } from '../data/mockDatabase'
 import {
   deleteOperatorApi,
   getOperatorsApi,
+  setOperatorAdministratorApi,
   setOperatorDeactivatedApi,
   updateOperatorClearanceApi,
 } from '../api/operators'
@@ -17,6 +18,8 @@ interface OperatorManagementPageProps {
 type PendingAction =
   | { type: 'deactivate'; operator: ManagedOperator }
   | { type: 'delete'; operator: ManagedOperator }
+  | { type: 'grant-admin'; operator: ManagedOperator }
+  | { type: 'revoke-admin'; operator: ManagedOperator }
 
 export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) {
   const { session } = useAuth()
@@ -84,12 +87,60 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
         setMessage(`${pendingAction.operator.username} permanently deleted.`)
       }
 
+      if (pendingAction.type === 'grant-admin') {
+        await setOperatorAdministratorApi(pendingAction.operator.username, true)
+        setMessage(
+          `${pendingAction.operator.username} granted administrator access. They may need to sign out and back in to see admin features.`,
+        )
+      }
+
+      if (pendingAction.type === 'revoke-admin') {
+        await setOperatorAdministratorApi(pendingAction.operator.username, false)
+        setMessage(`${pendingAction.operator.username} administrator access revoked.`)
+      }
+
       await reload()
-    } catch {
-      setMessage('Action failed.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Action failed.')
     }
 
     setPendingAction(null)
+  }
+
+  function pendingActionText(action: PendingAction) {
+    if (action.type === 'delete') {
+      return (
+        <>
+          Are you sure you want to permanently delete operator{' '}
+          <strong>{action.operator.username}</strong>? This cannot be undone.
+        </>
+      )
+    }
+
+    if (action.type === 'deactivate') {
+      return (
+        <>
+          Are you sure you want to deactivate operator{' '}
+          <strong>{action.operator.username}</strong>? They will be unable to sign in.
+        </>
+      )
+    }
+
+    if (action.type === 'grant-admin') {
+      return (
+        <>
+          Grant <strong>{action.operator.username}</strong> full administrator access? They will
+          be able to approve sign-ups, manage operators, and delete personnel files.
+        </>
+      )
+    }
+
+    return (
+      <>
+        Remove administrator access from <strong>{action.operator.username}</strong>? They will
+        keep their account at their current clearance level.
+      </>
+    )
   }
 
   return (
@@ -112,8 +163,9 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
       <section className="approval-intro panel">
         <h1>Registered Operators</h1>
         <p>
-          Manage all signed-in personnel — system accounts and approved sign-ups. Deactivated
-          operators cannot sign in. Approved sign-ups can be permanently deleted.
+          Manage all signed-in personnel — system accounts and approved sign-ups. Grant
+          administrator access to trusted operators, change clearance, deactivate accounts, or
+          delete approved sign-ups.
         </p>
         {message && (
           <p className="success-text" role="status">
@@ -125,19 +177,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
 
       {pendingAction && (
         <div className="delete-confirm panel" role="alert">
-          <p className="delete-confirm-text">
-            {pendingAction.type === 'delete' ? (
-              <>
-                Are you sure you want to permanently delete operator{' '}
-                <strong>{pendingAction.operator.username}</strong>? This cannot be undone.
-              </>
-            ) : (
-              <>
-                Are you sure you want to deactivate operator{' '}
-                <strong>{pendingAction.operator.username}</strong>? They will be unable to sign in.
-              </>
-            )}
-          </p>
+          <p className="delete-confirm-text">{pendingActionText(pendingAction)}</p>
           <div className="delete-confirm-actions">
             <button className="btn-ghost btn-reject" onClick={() => void confirmPendingAction()} type="button">
               Confirm
@@ -208,6 +248,26 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                       type="button"
                     >
                       Save Clearance
+                    </button>
+                  )}
+
+                  {operator.canGrantAdmin && (
+                    <button
+                      className="btn-primary btn-small"
+                      onClick={() => setPendingAction({ type: 'grant-admin', operator })}
+                      type="button"
+                    >
+                      Grant Admin
+                    </button>
+                  )}
+
+                  {operator.canRevokeAdmin && (
+                    <button
+                      className="btn-ghost btn-reject btn-small"
+                      onClick={() => setPendingAction({ type: 'revoke-admin', operator })}
+                      type="button"
+                    >
+                      Revoke Admin
                     </button>
                   )}
 
