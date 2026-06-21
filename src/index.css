@@ -1,0 +1,40 @@
+:root {
+  color-scheme: dark;
+  font-family: 'Consolas', 'Courier New', monospace;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #b8f0c8;
+  background-color: #0a0f0a;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top, rgba(30, 80, 40, 0.18), transparent 55%),
+    #0a0f0a;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
