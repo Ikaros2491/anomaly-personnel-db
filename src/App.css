@@ -44,6 +44,7 @@
 .anorep-logo {
   display: block;
   margin-inline: auto;
+  mix-blend-mode: lighten;
 }
 
 .anorep-logo--hero {
