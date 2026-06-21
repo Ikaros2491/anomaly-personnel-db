@@ -13,22 +13,28 @@ export interface SessionPayload {
 
 const COOKIE_NAME = 'anorep_token'
 
+function cookieOptions() {
+  const crossSite = process.env.COOKIE_CROSS_SITE === 'true'
+
+  return {
+    httpOnly: true,
+    sameSite: crossSite ? ('none' as const) : ('lax' as const),
+    secure: crossSite || process.env.NODE_ENV === 'production',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  }
+}
+
 export function getJwtSecret(): string {
   return process.env.JWT_SECRET ?? 'dev-insecure-secret'
 }
 
 export function setAuthCookie(res: Response, session: SessionPayload) {
   const token = jwt.sign(session, getJwtSecret(), { expiresIn: '7d' })
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  })
+  res.cookie(COOKIE_NAME, token, cookieOptions())
 }
 
 export function clearAuthCookie(res: Response) {
-  res.clearCookie(COOKIE_NAME)
+  res.clearCookie(COOKIE_NAME, cookieOptions())
 }
 
 export async function getSession(req: Request): Promise<SessionPayload | null> {

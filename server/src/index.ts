@@ -18,11 +18,14 @@ import { findInRecords, personnelToRowData, rowToPersonnel } from './personnel.j
 
 const app = express()
 const port = Number(process.env.PORT ?? 3001)
-const corsOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:5173'
+const corsOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
 
 app.use(
   cors({
-    origin: corsOrigin,
+    origin: corsOrigins,
     credentials: true,
   }),
 )

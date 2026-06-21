@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: anorep-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install && npx prisma db push && npm run db:seed
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:./prisma/dev.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: https://ikaros2491.github.io
+      - key: COOKIE_CROSS_SITE
+        value: "true"
+      - key: DOLL_PASSWORD
+        sync: false
