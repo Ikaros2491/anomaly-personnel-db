@@ -14,7 +14,7 @@ import {
   toAuthSession,
   type SessionPayload,
 } from './auth.js'
-import { findInRecords, personnelToRowData, rowToPersonnel } from './personnel.js'
+import { findInRecords, personnelToRowData, rowToPersonnel, type PersonnelRecordDto } from './personnel.js'
 
 const app = express()
 const port = Number(process.env.PORT ?? 3001)
@@ -228,6 +228,48 @@ app.delete('/api/personnel/:recordUid', requireAdmin, async (req, res) => {
 
   await prisma.personnelRecord.delete({ where: { recordUid } })
   res.json({ ok: true })
+})
+
+app.put('/api/personnel/:recordUid', requireAdmin, async (req, res) => {
+  const { recordUid } = req.params
+  const { record } = req.body as { record?: PersonnelRecordDto }
+
+  if (!record?.id || !record?.name || !record?.fields) {
+    res.status(400).json({ error: 'Invalid personnel record' })
+    return
+  }
+
+  const existing = await prisma.personnelRecord.findUnique({ where: { recordUid } })
+  if (!existing || existing.isBuiltin) {
+    res.status(404).json({ error: 'Record not found or cannot be edited' })
+    return
+  }
+
+  const row = personnelToRowData({
+    ...record,
+    recordUid,
+    createdBy: existing.createdBy ?? record.createdBy,
+    createdAt: existing.createdAt.toISOString(),
+    isUserCreated: true,
+  })
+
+  await prisma.personnelRecord.update({
+    where: { recordUid },
+    data: {
+      designation: row.designation,
+      name: row.name,
+      aliasesJson: row.aliasesJson,
+      picture: row.picture,
+      fieldsJson: row.fieldsJson,
+    },
+  })
+
+  res.json({
+    ok: true,
+    record: rowToPersonnel(
+      await prisma.personnelRecord.findUniqueOrThrow({ where: { recordUid } }),
+    ),
+  })
 })
 
 app.get('/api/personnel/:recordUid/is-user-created', requireAuth, async (req, res) => {

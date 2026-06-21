@@ -100,6 +100,10 @@ export function SearchTerminal({ onBack }: SearchTerminalProps) {
             setResult(null)
             setStatusMessage(`Personnel file ${deleted.id} permanently deleted from the registry.`)
           }}
+          onUpdated={(updated) => {
+            setResult(updated)
+            setStatusMessage(`Personnel file ${updated.id} updated successfully.`)
+          }}
           record={result}
           session={session}
         />

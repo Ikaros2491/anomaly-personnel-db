@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { deletePersonnelApi, isUserCreatedRecordApi } from '../api/personnel'
 import { applyClearanceTags } from '../data/clearanceTags'
 import { getAccessLabel } from '../data/access'
+import { EditScpForm } from './EditScpForm'
 import type { AuthSession, PersonnelField, PersonnelRecord } from '../types'
 
 interface PersonnelFileProps {
   record: PersonnelRecord
   session: AuthSession
   onDeleted?: (record: PersonnelRecord) => void
+  onUpdated?: (record: PersonnelRecord) => void
 }
 
 function renderClearanceTaggedText(text: string, clearance: number, isAdministrator: boolean) {
@@ -36,21 +38,22 @@ function FieldRow({ field, session }: { field: PersonnelField; session: AuthSess
   )
 }
 
-export function PersonnelFile({ record, session, onDeleted }: PersonnelFileProps) {
+export function PersonnelFile({ record, session, onDeleted, onUpdated }: PersonnelFileProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const [canDelete, setCanDelete] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [canManage, setCanManage] = useState(false)
   const showPicture = Boolean(record.picture)
   const accessLabel = getAccessLabel(session)
 
   useEffect(() => {
     if (!session.isAdministrator || !record.recordUid) {
-      setCanDelete(false)
+      setCanManage(false)
       return
     }
 
     isUserCreatedRecordApi(record.recordUid)
-      .then(setCanDelete)
-      .catch(() => setCanDelete(false))
+      .then(setCanManage)
+      .catch(() => setCanManage(false))
   }, [session.isAdministrator, record.recordUid])
 
   async function handleConfirmDelete() {
@@ -63,6 +66,19 @@ export function PersonnelFile({ record, session, onDeleted }: PersonnelFileProps
     } catch {
       setConfirmingDelete(false)
     }
+  }
+
+  if (editing) {
+    return (
+      <EditScpForm
+        onCancel={() => setEditing(false)}
+        onSaved={(updated) => {
+          setEditing(false)
+          onUpdated?.(updated)
+        }}
+        record={record}
+      />
+    )
   }
 
   return (
@@ -100,16 +116,21 @@ export function PersonnelFile({ record, session, onDeleted }: PersonnelFileProps
         ))}
       </dl>
 
-      {canDelete && (
+      {canManage && (
         <footer className="file-admin-actions">
           {!confirmingDelete ? (
-            <button
-              className="btn-ghost btn-reject"
-              onClick={() => setConfirmingDelete(true)}
-              type="button"
-            >
-              Delete File
-            </button>
+            <>
+              <button className="btn-primary btn-small" onClick={() => setEditing(true)} type="button">
+                Edit File
+              </button>
+              <button
+                className="btn-ghost btn-reject btn-small"
+                onClick={() => setConfirmingDelete(true)}
+                type="button"
+              >
+                Delete File
+              </button>
+            </>
           ) : (
             <div className="delete-confirm" role="alert">
               <p className="delete-confirm-text">
