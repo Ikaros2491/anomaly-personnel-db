@@ -12,17 +12,17 @@ async function clearDatabase() {
 }
 
 export async function seedDatabase(options: { force?: boolean } = {}) {
-  if (!options.force) {
-    const userCount = await prisma.user.count()
-    if (userCount > 0) {
-      console.log('Database already seeded, skipping.')
-      return
-    }
-  } else {
+  if (options.force) {
     await clearDatabase()
   }
 
+  let usersCreated = 0
+  let recordsCreated = 0
+
   for (const user of SEED_USERS) {
+    const existing = await prisma.user.findUnique({ where: { username: user.username } })
+    if (existing) continue
+
     const password =
       'passwordEnv' in user
         ? process.env[user.passwordEnv] ?? user.passwordDefault
@@ -40,12 +40,17 @@ export async function seedDatabase(options: { force?: boolean } = {}) {
         deactivated: false,
       },
     })
+    usersCreated++
   }
 
   for (const record of BUILTIN_PERSONNEL) {
+    const recordUid = `builtin-${record.id}`
+    const existing = await prisma.personnelRecord.findUnique({ where: { recordUid } })
+    if (existing) continue
+
     const row = personnelToRowData(
       {
-        recordUid: `builtin-${record.id}`,
+        recordUid,
         id: record.id,
         name: record.name,
         aliases: record.aliases,
@@ -56,9 +61,14 @@ export async function seedDatabase(options: { force?: boolean } = {}) {
     )
 
     await prisma.personnelRecord.create({ data: row })
+    recordsCreated++
   }
 
-  console.log('Database seeded successfully.')
+  if (usersCreated === 0 && recordsCreated === 0) {
+    console.log('Seed data already complete, nothing to add.')
+  } else {
+    console.log(`Seed complete: ${usersCreated} user(s), ${recordsCreated} record(s) added.`)
+  }
 }
 
 async function main() {
