@@ -3,6 +3,7 @@ import { CLEARANCE_LABELS } from '../data/mockDatabase'
 import {
   deleteOperatorApi,
   getOperatorsApi,
+  resetOperatorPasswordApi,
   setOperatorAdministratorApi,
   setOperatorDeactivatedApi,
   updateOperatorClearanceApi,
@@ -20,12 +21,14 @@ type PendingAction =
   | { type: 'delete'; operator: ManagedOperator }
   | { type: 'grant-admin'; operator: ManagedOperator }
   | { type: 'revoke-admin'; operator: ManagedOperator }
+  | { type: 'reset-password'; operator: ManagedOperator }
 
 export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) {
   const { session } = useAuth()
   const [operators, setOperators] = useState<ManagedOperator[]>([])
   const [message, setMessage] = useState('')
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+  const [passwordDraft, setPasswordDraft] = useState('')
   const [clearanceDraft, setClearanceDraft] = useState<Record<string, ClearanceLevel>>({})
   const [loading, setLoading] = useState(true)
 
@@ -45,6 +48,11 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
   async function reload() {
     const next = await getOperatorsApi()
     setOperators(next)
+  }
+
+  function openPendingAction(action: PendingAction) {
+    setPasswordDraft('')
+    setPendingAction(action)
   }
 
   async function handleClearanceChange(username: string, clearance: ClearanceLevel) {
@@ -68,11 +76,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
       }
       return
     }
-    setPendingAction({ type: 'deactivate', operator })
-  }
-
-  function handleDeleteRequest(operator: ManagedOperator) {
-    setPendingAction({ type: 'delete', operator })
+    openPendingAction({ type: 'deactivate', operator })
   }
 
   async function confirmPendingAction() {
@@ -101,12 +105,22 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
         setMessage(`${pendingAction.operator.username} administrator access revoked.`)
       }
 
+      if (pendingAction.type === 'reset-password') {
+        if (!passwordDraft.trim()) {
+          setMessage('Enter a new access code before confirming.')
+          return
+        }
+        await resetOperatorPasswordApi(pendingAction.operator.username, passwordDraft)
+        setMessage(`Access code reset for ${pendingAction.operator.username}.`)
+      }
+
       await reload()
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Action failed.')
     }
 
     setPendingAction(null)
+    setPasswordDraft('')
   }
 
   function pendingActionText(action: PendingAction) {
@@ -137,10 +151,19 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
       )
     }
 
+    if (action.type === 'revoke-admin') {
+      return (
+        <>
+          Remove administrator access from <strong>{action.operator.username}</strong>? They will
+          keep their account at their current clearance level.
+        </>
+      )
+    }
+
     return (
       <>
-        Remove administrator access from <strong>{action.operator.username}</strong>? They will
-        keep their account at their current clearance level.
+        Set a new access code for <strong>{action.operator.username}</strong>. The previous code
+        will stop working immediately.
       </>
     )
   }
@@ -168,7 +191,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
           Manage all signed-in personnel — system accounts and approved sign-ups. Grant
           administrator access to trusted operators, change clearance, deactivate accounts, or
           delete approved sign-ups.
-          {isDoll && ' Access codes are visible on this terminal only.'}
+          {isDoll && ' Doll clearance can reset operator access codes without viewing them.'}
         </p>
         {message && (
           <p className="success-text" role="status">
@@ -181,11 +204,29 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
       {pendingAction && (
         <div className="delete-confirm panel" role="alert">
           <p className="delete-confirm-text">{pendingActionText(pendingAction)}</p>
+          {pendingAction.type === 'reset-password' && (
+            <label className="operator-password-reset">
+              New access code
+              <input
+                autoFocus
+                onChange={(event) => setPasswordDraft(event.target.value)}
+                type="password"
+                value={passwordDraft}
+              />
+            </label>
+          )}
           <div className="delete-confirm-actions">
             <button className="btn-ghost btn-reject" onClick={() => void confirmPendingAction()} type="button">
               Confirm
             </button>
-            <button className="btn-ghost" onClick={() => setPendingAction(null)} type="button">
+            <button
+              className="btn-ghost"
+              onClick={() => {
+                setPendingAction(null)
+                setPasswordDraft('')
+              }}
+              type="button"
+            >
               Cancel
             </button>
           </div>
@@ -216,11 +257,6 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                       <span className="operator-status-tag"> DEACTIVATED</span>
                     )}
                   </p>
-                  {isDoll && operator.password && (
-                    <p className="operator-password">
-                      Access code: <code>{operator.password}</code>
-                    </p>
-                  )}
                 </div>
 
                 <div className="operator-controls">
@@ -259,10 +295,20 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                     </button>
                   )}
 
+                  {isDoll && (
+                    <button
+                      className="btn-ghost btn-small"
+                      onClick={() => openPendingAction({ type: 'reset-password', operator })}
+                      type="button"
+                    >
+                      Reset Access Code
+                    </button>
+                  )}
+
                   {operator.canGrantAdmin && (
                     <button
                       className="btn-primary btn-small"
-                      onClick={() => setPendingAction({ type: 'grant-admin', operator })}
+                      onClick={() => openPendingAction({ type: 'grant-admin', operator })}
                       type="button"
                     >
                       Grant Admin
@@ -272,7 +318,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                   {operator.canRevokeAdmin && (
                     <button
                       className="btn-ghost btn-reject btn-small"
-                      onClick={() => setPendingAction({ type: 'revoke-admin', operator })}
+                      onClick={() => openPendingAction({ type: 'revoke-admin', operator })}
                       type="button"
                     >
                       Revoke Admin
@@ -292,7 +338,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                   {operator.canDelete && (
                     <button
                       className="btn-ghost btn-reject btn-small"
-                      onClick={() => handleDeleteRequest(operator)}
+                      onClick={() => openPendingAction({ type: 'delete', operator })}
                       type="button"
                     >
                       Delete

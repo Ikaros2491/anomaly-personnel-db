@@ -89,6 +89,19 @@ export function isDollAccount(username: string) {
   return username === 'Doll'
 }
 
+export function requireDoll(req: Request, res: Response, next: NextFunction) {
+  getSession(req)
+    .then((session) => {
+      if (!session || !isDollAccount(session.username)) {
+        res.status(403).json({ error: 'Doll clearance required' })
+        return
+      }
+      ;(req as Request & { session: SessionPayload }).session = session
+      next()
+    })
+    .catch(next)
+}
+
 export function toAuthSession(session: SessionPayload) {
   return {
     username: session.username,

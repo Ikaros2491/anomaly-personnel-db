@@ -8,27 +8,25 @@ datasource db {
 }
 
 model User {
-  id                String   @id @default(uuid())
-  username          String   @unique
-  passwordHash      String
-  passwordPlaintext String?
-  displayName       String
-  clearance         Int
-  badgeId           String
-  isAdministrator   Boolean  @default(false)
-  isSystem          Boolean  @default(false)
-  deactivated       Boolean  @default(false)
-  createdAt         DateTime @default(now())
+  id              String   @id @default(uuid())
+  username        String   @unique
+  passwordHash    String
+  displayName     String
+  clearance       Int
+  badgeId         String
+  isAdministrator Boolean  @default(false)
+  isSystem        Boolean  @default(false)
+  deactivated     Boolean  @default(false)
+  createdAt       DateTime @default(now())
 }
 
 model SignupRequest {
-  id                String   @id @default(uuid())
-  username          String   @unique
-  passwordHash      String
-  passwordPlaintext String
-  displayName       String
-  justification   String
-  submittedAt       DateTime @default(now())
+  id            String   @id @default(uuid())
+  username      String   @unique
+  passwordHash  String
+  displayName   String
+  justification String
+  submittedAt   DateTime @default(now())
 }
 
 model PersonnelRecord {

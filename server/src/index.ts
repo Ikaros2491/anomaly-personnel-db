@@ -8,9 +8,9 @@ import { prisma } from './db.js'
 import {
   clearAuthCookie,
   getSession,
-  isDollAccount,
   requireAdmin,
   requireAuth,
+  requireDoll,
   setAuthCookie,
   toAuthSession,
   type SessionPayload,
@@ -125,7 +125,6 @@ app.post('/api/signup', async (req, res) => {
     data: {
       username: trimmedUsername,
       passwordHash: await bcrypt.hash(password, 10),
-      passwordPlaintext: password,
       displayName: trimmedDisplay,
       justification: justification?.trim() ?? '',
     },
@@ -310,7 +309,6 @@ app.post('/api/signups/:id/approve', requireAdmin, async (req, res) => {
     data: {
       username: request.username,
       passwordHash: request.passwordHash,
-      passwordPlaintext: request.passwordPlaintext,
       displayName: request.displayName,
       clearance: clearance ?? 1,
       badgeId: nextBadgeId(userCount),
@@ -356,9 +354,6 @@ app.get('/api/operators', requireAdmin, async (req, res) => {
         user.isAdministrator &&
         user.username !== session.username &&
         !user.deactivated,
-      ...(isDollAccount(session.username)
-        ? { password: user.passwordPlaintext ?? '(not recorded)' }
-        : {}),
     })),
   })
 })
@@ -436,6 +431,29 @@ app.patch('/api/operators/:username/administrator', requireAdmin, async (req, re
       isAdministrator: grantAdmin,
       clearance: grantAdmin ? Math.max(user.clearance, 5) : user.clearance,
     },
+  })
+
+  res.json({ ok: true })
+})
+
+app.patch('/api/operators/:username/password', requireDoll, async (req, res) => {
+  const { username } = req.params
+  const { password } = req.body as { password?: string }
+
+  if (!password?.trim()) {
+    res.status(400).json({ error: 'A new access code is required.' })
+    return
+  }
+
+  const user = await prisma.user.findUnique({ where: { username } })
+  if (!user) {
+    res.status(404).json({ error: 'Operator not found' })
+    return
+  }
+
+  await prisma.user.update({
+    where: { username },
+    data: { passwordHash: await bcrypt.hash(password, 10) },
   })
 
   res.json({ ok: true })

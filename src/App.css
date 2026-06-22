@@ -853,6 +853,17 @@ textarea:focus {
   background: rgba(40, 8, 8, 0.55);
 }
 
+.operator-password-reset {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.85rem 0 0;
+  max-width: 280px;
+}
+
+.operator-password-reset input {
+  width: 100%;
+}
+
 .delete-confirm-text {
   margin: 0 0 0.75rem;
   color: #ffb0b0;
@@ -904,17 +915,6 @@ textarea:focus {
   margin: 0;
   font-size: 0.82rem;
   color: #6a9a72;
-}
-
-.operator-password {
-  margin: 0.45rem 0 0;
-  font-size: 0.84rem;
-  color: #ffd278;
-}
-
-.operator-password code {
-  font-family: 'Consolas', 'Courier New', monospace;
-  letter-spacing: 0.04em;
 }
 
 .operator-admin-tag,

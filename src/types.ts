@@ -24,7 +24,6 @@ export interface ManagedOperator {
   canModify: boolean
   canGrantAdmin: boolean
   canRevokeAdmin: boolean
-  password?: string
 }
 
 export interface SignupRequest {

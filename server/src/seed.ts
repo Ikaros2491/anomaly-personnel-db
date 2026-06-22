@@ -22,28 +22,17 @@ export async function seedDatabase(options: { force?: boolean } = {}) {
 
   let usersCreated = 0
   let recordsCreated = 0
-  let passwordsBackfilled = 0
 
   for (const user of SEED_USERS) {
-    const password = seedPasswordFor(user)
     const existing = await prisma.user.findUnique({ where: { username: user.username } })
+    if (existing) continue
 
-    if (existing) {
-      if (!existing.passwordPlaintext) {
-        await prisma.user.update({
-          where: { username: user.username },
-          data: { passwordPlaintext: password },
-        })
-        passwordsBackfilled++
-      }
-      continue
-    }
+    const password = seedPasswordFor(user)
 
     await prisma.user.create({
       data: {
         username: user.username,
         passwordHash: await bcrypt.hash(password, 10),
-        passwordPlaintext: password,
         displayName: user.displayName,
         clearance: user.clearance,
         badgeId: user.badgeId,
@@ -76,12 +65,10 @@ export async function seedDatabase(options: { force?: boolean } = {}) {
     recordsCreated++
   }
 
-  if (usersCreated === 0 && recordsCreated === 0 && passwordsBackfilled === 0) {
+  if (usersCreated === 0 && recordsCreated === 0) {
     console.log('Seed data already complete, nothing to add.')
   } else {
-    console.log(
-      `Seed complete: ${usersCreated} user(s), ${recordsCreated} record(s), ${passwordsBackfilled} password(s) backfilled.`,
-    )
+    console.log(`Seed complete: ${usersCreated} user(s), ${recordsCreated} record(s) added.`)
   }
 }
 

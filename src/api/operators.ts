@@ -46,3 +46,10 @@ export async function setOperatorAdministratorApi(username: string, isAdministra
     body: JSON.stringify({ isAdministrator }),
   })
 }
+
+export async function resetOperatorPasswordApi(username: string, password: string) {
+  return apiRequest('/api/operators/' + encodeURIComponent(username) + '/password', {
+    method: 'PATCH',
+    body: JSON.stringify({ password }),
+  })
+}
