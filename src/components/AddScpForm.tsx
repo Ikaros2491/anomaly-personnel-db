@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { AnorepLogo } from './AnorepLogo'
 import { CLEARANCE_TAG_INSTRUCTIONS } from '../data/clearanceTags'
 import { EMPTY_SCP_SUBMISSION, type ScpSubmission } from '../types'
+import { compressImageFile, prepareScpSubmission } from '../utils/compressImage'
 
 interface AddScpFormProps {
   onBack: () => void
@@ -24,7 +25,7 @@ export function AddScpForm({ onBack }: AddScpFormProps) {
     setSuccess('')
   }
 
-  function handlePictureUpload(event: ChangeEvent<HTMLInputElement>) {
+  async function handlePictureUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -33,13 +34,12 @@ export function AddScpForm({ onBack }: AddScpFormProps) {
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        updateField('picture', reader.result)
-      }
+    try {
+      const compressed = await compressImageFile(file)
+      updateField('picture', compressed)
+    } catch {
+      setError('Could not process image. Try a smaller file or a different format.')
     }
-    reader.readAsDataURL(file)
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -63,7 +63,8 @@ export function AddScpForm({ onBack }: AddScpFormProps) {
       return
     }
 
-    const record = buildPersonnelRecord(form, session.displayName)
+    const prepared = await prepareScpSubmission(form)
+    const record = buildPersonnelRecord(prepared, session.displayName)
     setSubmitting(true)
 
     try {

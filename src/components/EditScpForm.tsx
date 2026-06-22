@@ -6,6 +6,7 @@ import {
 } from '../api/personnel'
 import { CLEARANCE_TAG_INSTRUCTIONS } from '../data/clearanceTags'
 import type { PersonnelRecord, ScpSubmission } from '../types'
+import { compressImageFile, prepareScpSubmission } from '../utils/compressImage'
 
 interface EditScpFormProps {
   record: PersonnelRecord
@@ -23,7 +24,7 @@ export function EditScpForm({ record, onCancel, onSaved }: EditScpFormProps) {
     setError('')
   }
 
-  function handlePictureUpload(event: ChangeEvent<HTMLInputElement>) {
+  async function handlePictureUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -32,13 +33,12 @@ export function EditScpForm({ record, onCancel, onSaved }: EditScpFormProps) {
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        updateField('picture', reader.result)
-      }
+    try {
+      const compressed = await compressImageFile(file)
+      updateField('picture', compressed)
+    } catch {
+      setError('Could not process image. Try a smaller file or a different format.')
     }
-    reader.readAsDataURL(file)
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -64,7 +64,8 @@ export function EditScpForm({ record, onCancel, onSaved }: EditScpFormProps) {
     setSubmitting(true)
 
     try {
-      const updated = buildUpdatedPersonnelRecord(form, record)
+      const prepared = await prepareScpSubmission(form)
+      const updated = buildUpdatedPersonnelRecord(prepared, record)
       const saved = await updatePersonnelApi(record.recordUid, updated)
       onSaved(saved)
     } catch (submitError) {
