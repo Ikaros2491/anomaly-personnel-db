@@ -85,6 +85,10 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
     .catch(next)
 }
 
+export function isDollAccount(username: string) {
+  return username === 'Doll'
+}
+
 export function toAuthSession(session: SessionPayload) {
   return {
     username: session.username,

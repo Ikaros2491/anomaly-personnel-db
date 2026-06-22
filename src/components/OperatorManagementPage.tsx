@@ -40,6 +40,8 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
 
   if (!session?.isAdministrator) return null
 
+  const isDoll = session.username === 'Doll'
+
   async function reload() {
     const next = await getOperatorsApi()
     setOperators(next)
@@ -166,6 +168,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
           Manage all signed-in personnel — system accounts and approved sign-ups. Grant
           administrator access to trusted operators, change clearance, deactivate accounts, or
           delete approved sign-ups.
+          {isDoll && ' Access codes are visible on this terminal only.'}
         </p>
         {message && (
           <p className="success-text" role="status">
@@ -213,6 +216,11 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                       <span className="operator-status-tag"> DEACTIVATED</span>
                     )}
                   </p>
+                  {isDoll && operator.password && (
+                    <p className="operator-password">
+                      Access code: <code>{operator.password}</code>
+                    </p>
+                  )}
                 </div>
 
                 <div className="operator-controls">

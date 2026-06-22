@@ -906,6 +906,17 @@ textarea:focus {
   color: #6a9a72;
 }
 
+.operator-password {
+  margin: 0.45rem 0 0;
+  font-size: 0.84rem;
+  color: #ffd278;
+}
+
+.operator-password code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  letter-spacing: 0.04em;
+}
+
 .operator-admin-tag,
 .operator-status-tag {
   letter-spacing: 0.08em;
