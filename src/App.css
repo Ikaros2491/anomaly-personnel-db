@@ -877,6 +877,23 @@ textarea:focus {
   gap: 0.75rem;
 }
 
+.operators-search {
+  margin-bottom: 1rem;
+}
+
+.operators-search label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: #8fd89a;
+}
+
+.operators-search-meta {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: #6a9a72;
+}
+
 .operators-list {
   list-style: none;
   margin: 0;

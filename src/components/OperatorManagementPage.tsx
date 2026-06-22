@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CLEARANCE_LABELS } from '../data/mockDatabase'
 import {
   deleteOperatorApi,
@@ -31,6 +31,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
   const [passwordDraft, setPasswordDraft] = useState('')
   const [clearanceDraft, setClearanceDraft] = useState<Record<string, ClearanceLevel>>({})
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     if (!session?.isAdministrator) return
@@ -44,6 +45,28 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
   if (!session?.isAdministrator) return null
 
   const isDoll = session.username === 'Doll'
+
+  const filteredOperators = useMemo(() => {
+    const terms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    if (terms.length === 0) return operators
+
+    return operators.filter((operator) => {
+      const haystack = [
+        operator.username,
+        operator.displayName,
+        operator.badgeId,
+        operator.source === 'system' ? 'system account' : 'approved sign-up',
+        operator.isAdministrator ? 'administrator admin' : '',
+        operator.deactivated ? 'deactivated inactive' : 'active',
+        CLEARANCE_LABELS[operator.clearance],
+        String(operator.clearance),
+      ]
+        .join(' ')
+        .toLowerCase()
+
+      return terms.every((term) => haystack.includes(term))
+    })
+  }, [operators, searchQuery])
 
   async function reload() {
     const next = await getOperatorsApi()
@@ -234,11 +257,31 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
       )}
 
       <section className="operators-table panel">
+        <div className="operators-search">
+          <label htmlFor="operator-search">Find Operator</label>
+          <input
+            id="operator-search"
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search by name, username, badge ID, clearance, or status..."
+            type="search"
+            value={searchQuery}
+          />
+          {operators.length > 0 && (
+            <p className="operators-search-meta">
+              {searchQuery.trim()
+                ? `Showing ${filteredOperators.length} of ${operators.length} operators`
+                : `${operators.length} registered operator${operators.length === 1 ? '' : 's'}`}
+            </p>
+          )}
+        </div>
+
         {operators.length === 0 ? (
           <p className="approval-empty">No operators registered.</p>
+        ) : filteredOperators.length === 0 ? (
+          <p className="approval-empty">No operators match &ldquo;{searchQuery.trim()}&rdquo;.</p>
         ) : (
           <ul className="operators-list">
-            {operators.map((operator) => (
+            {filteredOperators.map((operator) => (
               <li
                 className={`operator-row ${operator.deactivated ? 'operator-row--inactive' : ''}`}
                 key={operator.username}
