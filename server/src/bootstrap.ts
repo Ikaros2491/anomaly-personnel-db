@@ -4,7 +4,8 @@ import { startServer } from './index.js'
 
 async function bootstrap() {
   console.log('Applying database schema...')
-  execSync('npx prisma db push', { stdio: 'inherit' })
+  // --accept-data-loss: safe for intentional column drops (e.g. removed passwordPlaintext).
+  execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' })
 
   await seedDatabase()
 
