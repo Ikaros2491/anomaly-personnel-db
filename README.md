@@ -65,7 +65,7 @@ On the API host, set:
 
 | Variable | Example |
 |---|---|
-| `CORS_ORIGIN` | `https://ikaros2491.github.io` |
+| `CORS_ORIGIN` | `https://anorep.com,https://www.anorep.com` |
 | `COOKIE_CROSS_SITE` | `true` |
 | `JWT_SECRET` | long random string |
 | `DOLL_PASSWORD` | your admin password |
