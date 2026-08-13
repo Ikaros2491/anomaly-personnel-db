@@ -57,7 +57,8 @@ export function AddScpForm({ onBack }: AddScpFormProps) {
     if (
       !form.physicalDescription.trim() ||
       !form.anomalousAbilities.trim() ||
-      !form.containmentProcedures.trim()
+      !form.containmentProcedures.trim() ||
+      !form.terminateContainProcedures.trim()
     ) {
       setError('All profile fields must be completed before filing.')
       return
@@ -208,6 +209,19 @@ export function AddScpForm({ onBack }: AddScpFormProps) {
               rows={4}
               value={form.containmentProcedures}
             />
+          </label>
+
+          <label className="form-span-2">
+            How to Terminate / Contain
+            <textarea
+              onChange={(event) => updateField('terminateContainProcedures', event.target.value)}
+              placeholder="Lethal / permanent containment protocols. Visible only to Deep Access operators and administrators."
+              rows={4}
+              value={form.terminateContainProcedures}
+            />
+            <span className="hint">
+              This section is redacted for all operators unless an administrator grants Deep Access.
+            </span>
           </label>
         </div>
 

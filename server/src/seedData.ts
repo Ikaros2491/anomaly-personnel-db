@@ -26,6 +26,13 @@ export const BUILTIN_PERSONNEL = [
         value: 'Event 7734-B (██/██/20██): Brief containment breach during transfer. 3 casualties. Reclassified.',
         minClearance: 4,
       },
+      {
+        label: 'How to Terminate / Contain',
+        value:
+          'If cognitive cascade exceeds threshold: administer Class-G amnestics, isolate from all textual media, and authorize lethal force only under Site Director order.',
+        minClearance: 1,
+        requiresDeepAccess: true,
+      },
     ],
   },
   {

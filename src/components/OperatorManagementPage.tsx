@@ -5,6 +5,7 @@ import {
   getOperatorsApi,
   resetOperatorPasswordApi,
   setOperatorAdministratorApi,
+  setOperatorDeepAccessApi,
   setOperatorDeactivatedApi,
   updateOperatorClearanceApi,
 } from '../api/operators'
@@ -21,6 +22,8 @@ type PendingAction =
   | { type: 'delete'; operator: ManagedOperator }
   | { type: 'grant-admin'; operator: ManagedOperator }
   | { type: 'revoke-admin'; operator: ManagedOperator }
+  | { type: 'grant-deep-access'; operator: ManagedOperator }
+  | { type: 'revoke-deep-access'; operator: ManagedOperator }
   | { type: 'reset-password'; operator: ManagedOperator }
 
 export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) {
@@ -57,6 +60,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
         operator.badgeId,
         operator.source === 'system' ? 'system account' : 'approved sign-up',
         operator.isAdministrator ? 'administrator admin' : '',
+        operator.deepAccess ? 'deep access' : '',
         operator.deactivated ? 'deactivated inactive' : 'active',
         CLEARANCE_LABELS[operator.clearance],
         String(operator.clearance),
@@ -128,6 +132,18 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
         setMessage(`${pendingAction.operator.username} administrator access revoked.`)
       }
 
+      if (pendingAction.type === 'grant-deep-access') {
+        await setOperatorDeepAccessApi(pendingAction.operator.username, true)
+        setMessage(
+          `${pendingAction.operator.username} granted Deep Access. They may need to sign out and back in to see terminate/contain sections.`,
+        )
+      }
+
+      if (pendingAction.type === 'revoke-deep-access') {
+        await setOperatorDeepAccessApi(pendingAction.operator.username, false)
+        setMessage(`${pendingAction.operator.username} Deep Access revoked.`)
+      }
+
       if (pendingAction.type === 'reset-password') {
         if (!passwordDraft.trim()) {
           setMessage('Enter a new access code before confirming.')
@@ -183,6 +199,24 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
       )
     }
 
+    if (action.type === 'grant-deep-access') {
+      return (
+        <>
+          Grant <strong>{action.operator.username}</strong> Deep Access? They will be able to view
+          the How to Terminate / Contain section on personnel files.
+        </>
+      )
+    }
+
+    if (action.type === 'revoke-deep-access') {
+      return (
+        <>
+          Revoke Deep Access from <strong>{action.operator.username}</strong>? Terminate / contain
+          sections will appear redacted for them again.
+        </>
+      )
+    }
+
     return (
       <>
         Set a new access code for <strong>{action.operator.username}</strong>. The previous code
@@ -212,8 +246,8 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
         <h1>Registered Operators</h1>
         <p>
           Manage all signed-in personnel — system accounts and approved sign-ups. Grant
-          administrator access to trusted operators, change clearance, deactivate accounts, or
-          delete approved sign-ups.
+          administrator access or Deep Access to trusted operators, change clearance, deactivate
+          accounts, or delete approved sign-ups.
           {isDoll && ' Doll clearance can reset operator access codes without viewing them.'}
         </p>
         {message && (
@@ -296,6 +330,9 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                     {operator.isAdministrator && (
                       <span className="admin-badge operator-admin-tag"> ADMINISTRATOR</span>
                     )}
+                    {operator.deepAccess && (
+                      <span className="admin-badge operator-admin-tag"> DEEP ACCESS</span>
+                    )}
                     {operator.deactivated && (
                       <span className="operator-status-tag"> DEACTIVATED</span>
                     )}
@@ -345,6 +382,26 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                       type="button"
                     >
                       Reset Access Code
+                    </button>
+                  )}
+
+                  {operator.canGrantDeepAccess && (
+                    <button
+                      className="btn-primary btn-small"
+                      onClick={() => openPendingAction({ type: 'grant-deep-access', operator })}
+                      type="button"
+                    >
+                      Grant Deep Access
+                    </button>
+                  )}
+
+                  {operator.canRevokeDeepAccess && (
+                    <button
+                      className="btn-ghost btn-reject btn-small"
+                      onClick={() => openPendingAction({ type: 'revoke-deep-access', operator })}
+                      type="button"
+                    >
+                      Revoke Deep Access
                     </button>
                   )}
 

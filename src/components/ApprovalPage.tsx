@@ -205,9 +205,12 @@ export function ApprovalPage({ onBack }: ApprovalPageProps) {
                     Submitted by {submission.submittedBy} — {formatDate(submission.submittedAt)}
                   </p>
                   <dl className="approval-preview-fields">
-                    {submission.record.fields.slice(0, 4).map((field) => (
+                    {submission.record.fields.map((field) => (
                       <div className="approval-preview-row" key={field.label}>
-                        <dt>{field.label}</dt>
+                        <dt>
+                          {field.label}
+                          {field.requiresDeepAccess ? ' (Deep Access)' : ''}
+                        </dt>
                         <dd>{field.value}</dd>
                       </div>
                     ))}

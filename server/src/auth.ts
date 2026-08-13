@@ -9,6 +9,7 @@ export interface SessionPayload {
   clearance: number
   badgeId: string
   isAdministrator: boolean
+  deepAccess: boolean
 }
 
 const COOKIE_NAME = 'anorep_token'
@@ -53,6 +54,7 @@ export async function getSession(req: Request): Promise<SessionPayload | null> {
       clearance: user.clearance,
       badgeId: user.badgeId,
       isAdministrator: user.isAdministrator,
+      deepAccess: user.deepAccess,
     }
   } catch {
     return null
@@ -109,5 +111,6 @@ export function toAuthSession(session: SessionPayload) {
     clearance: session.clearance,
     badgeId: session.badgeId,
     isAdministrator: session.isAdministrator,
+    deepAccess: session.deepAccess,
   }
 }

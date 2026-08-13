@@ -47,6 +47,13 @@ export async function setOperatorAdministratorApi(username: string, isAdministra
   })
 }
 
+export async function setOperatorDeepAccessApi(username: string, deepAccess: boolean) {
+  return apiRequest('/api/operators/' + encodeURIComponent(username) + '/deep-access', {
+    method: 'PATCH',
+    body: JSON.stringify({ deepAccess }),
+  })
+}
+
 export async function resetOperatorPasswordApi(username: string, password: string) {
   return apiRequest('/api/operators/' + encodeURIComponent(username) + '/password', {
     method: 'PATCH',

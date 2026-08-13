@@ -1,5 +1,17 @@
 import type { PersonnelRecord as DbPersonnel } from '@prisma/client'
 import { randomUUID } from 'crypto'
+import type { SessionPayload } from './auth.js'
+
+export const TERMINATE_CONTAIN_FIELD_LABEL = 'How to Terminate / Contain'
+export const DEEP_ACCESS_REDACTION = '[REDACTED — DEEP ACCESS REQUIRED]'
+
+export interface PersonnelFieldDto {
+  label: string
+  value: string
+  minClearance: number
+  requiresDeepAccess?: boolean
+  redacted?: boolean
+}
 
 export interface PersonnelRecordDto {
   recordUid?: string
@@ -7,10 +19,39 @@ export interface PersonnelRecordDto {
   name: string
   aliases: string[]
   picture?: string
-  fields: { label: string; value: string; minClearance: number }[]
+  fields: PersonnelFieldDto[]
   createdBy?: string
   createdAt?: string
   isUserCreated?: boolean
+}
+
+export function canViewDeepAccess(session: Pick<SessionPayload, 'isAdministrator' | 'deepAccess'>) {
+  return session.isAdministrator || session.deepAccess
+}
+
+function isDeepAccessField(field: PersonnelFieldDto) {
+  return Boolean(field.requiresDeepAccess) || field.label === TERMINATE_CONTAIN_FIELD_LABEL
+}
+
+export function sanitizePersonnelForViewer(
+  record: PersonnelRecordDto,
+  session: Pick<SessionPayload, 'isAdministrator' | 'deepAccess'>,
+): PersonnelRecordDto {
+  if (canViewDeepAccess(session)) return record
+
+  return {
+    ...record,
+    fields: record.fields.map((field) => {
+      if (!isDeepAccessField(field)) return field
+
+      return {
+        ...field,
+        requiresDeepAccess: true,
+        value: DEEP_ACCESS_REDACTION,
+        redacted: true,
+      }
+    }),
+  }
 }
 
 export function rowToPersonnel(row: DbPersonnel): PersonnelRecordDto {

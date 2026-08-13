@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { deletePersonnelApi, isUserCreatedRecordApi } from '../api/personnel'
 import { applyClearanceTags } from '../data/clearanceTags'
-import { getAccessLabel } from '../data/access'
+import { canViewDeepAccess, getAccessLabel } from '../data/access'
 import { EditScpForm } from './EditScpForm'
 import type { AuthSession, PersonnelField, PersonnelRecord } from '../types'
 
@@ -28,6 +28,21 @@ function renderClearanceTaggedText(text: string, clearance: number, isAdministra
 }
 
 function FieldRow({ field, session }: { field: PersonnelField; session: AuthSession }) {
+  const locked =
+    Boolean(field.redacted) ||
+    (Boolean(field.requiresDeepAccess) && !canViewDeepAccess(session))
+
+  if (locked) {
+    return (
+      <div className="field-row field-row--locked">
+        <dt>{field.label}</dt>
+        <dd>
+          <span className="redacted">[REDACTED — DEEP ACCESS REQUIRED]</span>
+        </dd>
+      </div>
+    )
+  }
+
   return (
     <div className="field-row">
       <dt>{field.label}</dt>

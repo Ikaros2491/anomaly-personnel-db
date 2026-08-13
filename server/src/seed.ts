@@ -2,7 +2,7 @@ import 'dotenv/config'
 import bcrypt from 'bcryptjs'
 import { prisma } from './db.js'
 import { BUILTIN_PERSONNEL, SEED_USERS } from './seedData.js'
-import { personnelToRowData } from './personnel.js'
+import { personnelToRowData, TERMINATE_CONTAIN_FIELD_LABEL } from './personnel.js'
 
 async function clearDatabase() {
   await prisma.pendingPersonnelSubmission.deleteMany()
@@ -22,6 +22,7 @@ export async function seedDatabase(options: { force?: boolean } = {}) {
 
   let usersCreated = 0
   let recordsCreated = 0
+  let recordsUpdated = 0
 
   for (const user of SEED_USERS) {
     const existing = await prisma.user.findUnique({ where: { username: user.username } })
@@ -37,6 +38,7 @@ export async function seedDatabase(options: { force?: boolean } = {}) {
         clearance: user.clearance,
         badgeId: user.badgeId,
         isAdministrator: user.isAdministrator,
+        deepAccess: false,
         isSystem: true,
         deactivated: false,
       },
@@ -47,7 +49,21 @@ export async function seedDatabase(options: { force?: boolean } = {}) {
   for (const record of BUILTIN_PERSONNEL) {
     const recordUid = `builtin-${record.id}`
     const existing = await prisma.personnelRecord.findUnique({ where: { recordUid } })
-    if (existing) continue
+
+    if (existing) {
+      const currentFields = JSON.parse(existing.fieldsJson) as { label: string }[]
+      const hasTerminate = currentFields.some(
+        (field) => field.label === TERMINATE_CONTAIN_FIELD_LABEL,
+      )
+      if (!hasTerminate) {
+        await prisma.personnelRecord.update({
+          where: { recordUid },
+          data: { fieldsJson: JSON.stringify(record.fields) },
+        })
+        recordsUpdated++
+      }
+      continue
+    }
 
     const row = personnelToRowData(
       {
@@ -65,10 +81,12 @@ export async function seedDatabase(options: { force?: boolean } = {}) {
     recordsCreated++
   }
 
-  if (usersCreated === 0 && recordsCreated === 0) {
+  if (usersCreated === 0 && recordsCreated === 0 && recordsUpdated === 0) {
     console.log('Seed data already complete, nothing to add.')
   } else {
-    console.log(`Seed complete: ${usersCreated} user(s), ${recordsCreated} record(s) added.`)
+    console.log(
+      `Seed complete: ${usersCreated} user(s), ${recordsCreated} record(s) added, ${recordsUpdated} record(s) updated.`,
+    )
   }
 }
 

@@ -19,11 +19,14 @@ export interface ManagedOperator {
   badgeId: string
   source: OperatorSource
   isAdministrator: boolean
+  deepAccess: boolean
   deactivated: boolean
   canDelete: boolean
   canModify: boolean
   canGrantAdmin: boolean
   canRevokeAdmin: boolean
+  canGrantDeepAccess: boolean
+  canRevokeDeepAccess: boolean
 }
 
 export interface SignupRequest {
@@ -39,6 +42,8 @@ export interface PersonnelField {
   label: string
   value: string
   minClearance: ClearanceLevel
+  requiresDeepAccess?: boolean
+  redacted?: boolean
 }
 
 export interface PersonnelRecord {
@@ -68,6 +73,7 @@ export interface ScpSubmission {
   physicalDescription: string
   anomalousAbilities: string
   containmentProcedures: string
+  terminateContainProcedures: string
 }
 
 export interface SignupFormData {
@@ -83,6 +89,7 @@ export interface AuthSession {
   clearance: ClearanceLevel
   badgeId: string
   isAdministrator: boolean
+  deepAccess: boolean
 }
 
 export type AppView = 'home' | 'search' | 'add' | 'approve' | 'operators'
@@ -97,6 +104,7 @@ export const EMPTY_SCP_SUBMISSION: ScpSubmission = {
   physicalDescription: '',
   anomalousAbilities: '',
   containmentProcedures: '',
+  terminateContainProcedures: '',
 }
 
 export const EMPTY_SIGNUP_FORM: SignupFormData = {

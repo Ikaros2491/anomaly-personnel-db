@@ -15,7 +15,7 @@ import {
   toAuthSession,
   type SessionPayload,
 } from './auth.js'
-import { findInRecords, personnelToRowData, rowToPersonnel, type PersonnelRecordDto } from './personnel.js'
+import { findInRecords, personnelToRowData, rowToPersonnel, sanitizePersonnelForViewer, type PersonnelRecordDto } from './personnel.js'
 
 const app = express()
 const port = Number(process.env.PORT ?? 3001)
@@ -73,6 +73,7 @@ app.post('/api/auth/login', async (req, res) => {
     clearance: user.clearance,
     badgeId: user.badgeId,
     isAdministrator: user.isAdministrator,
+    deepAccess: user.deepAccess,
   }
 
   setAuthCookie(res, session)
@@ -136,10 +137,11 @@ app.post('/api/signup', async (req, res) => {
 // ——— Personnel ———
 
 app.get('/api/personnel/search', requireAuth, async (req, res) => {
+  const session = (req as express.Request & { session: SessionPayload }).session
   const query = String(req.query.q ?? '')
   const records = await loadAllApprovedPersonnel()
   const match = findInRecords(records, query)
-  res.json({ record: match })
+  res.json({ record: match ? sanitizePersonnelForViewer(match, session) : null })
 })
 
 app.get('/api/personnel/stats', requireAuth, async (_req, res) => {
@@ -160,7 +162,10 @@ app.post('/api/personnel', requireAuth, async (req, res) => {
   if (session.isAdministrator) {
     const row = personnelToRowData({ ...record, isUserCreated: true })
     await prisma.personnelRecord.create({ data: row })
-    res.json({ ok: true, immediate: true, record: rowToPersonnel(await prisma.personnelRecord.findUniqueOrThrow({ where: { recordUid: row.recordUid } })) })
+    const created = rowToPersonnel(
+      await prisma.personnelRecord.findUniqueOrThrow({ where: { recordUid: row.recordUid } }),
+    )
+    res.json({ ok: true, immediate: true, record: sanitizePersonnelForViewer(created, session) })
     return
   }
 
@@ -267,8 +272,11 @@ app.put('/api/personnel/:recordUid', requireAdmin, async (req, res) => {
 
   res.json({
     ok: true,
-    record: rowToPersonnel(
-      await prisma.personnelRecord.findUniqueOrThrow({ where: { recordUid } }),
+    record: sanitizePersonnelForViewer(
+      rowToPersonnel(
+        await prisma.personnelRecord.findUniqueOrThrow({ where: { recordUid } }),
+      ),
+      (req as express.Request & { session: SessionPayload }).session,
     ),
   })
 })
@@ -313,6 +321,7 @@ app.post('/api/signups/:id/approve', requireAdmin, async (req, res) => {
       clearance: clearance ?? 1,
       badgeId: nextBadgeId(userCount),
       isAdministrator: false,
+      deepAccess: false,
       isSystem: false,
       deactivated: false,
     },
@@ -346,6 +355,7 @@ app.get('/api/operators', requireAdmin, async (req, res) => {
       badgeId: user.badgeId,
       source: user.isSystem ? 'system' : 'approved',
       isAdministrator: user.isAdministrator,
+      deepAccess: user.deepAccess,
       deactivated: user.deactivated,
       canDelete: !user.isSystem && !user.isAdministrator,
       canModify: !user.isAdministrator,
@@ -354,6 +364,8 @@ app.get('/api/operators', requireAdmin, async (req, res) => {
         user.isAdministrator &&
         user.username !== session.username &&
         !user.deactivated,
+      canGrantDeepAccess: !user.deepAccess && !user.deactivated,
+      canRevokeDeepAccess: user.deepAccess && !user.deactivated && !user.isAdministrator,
     })),
   })
 })
@@ -431,6 +443,30 @@ app.patch('/api/operators/:username/administrator', requireAdmin, async (req, re
       isAdministrator: grantAdmin,
       clearance: grantAdmin ? Math.max(user.clearance, 5) : user.clearance,
     },
+  })
+
+  res.json({ ok: true })
+})
+
+app.patch('/api/operators/:username/deep-access', requireAdmin, async (req, res) => {
+  const { username } = req.params
+  const { deepAccess } = req.body as { deepAccess?: boolean }
+
+  const user = await prisma.user.findUnique({ where: { username } })
+  if (!user || user.deactivated) {
+    res.status(404).json({ error: 'Operator not found or deactivated' })
+    return
+  }
+
+  // Administrators already bypass Deep Access; keep the flag unset for them.
+  if (user.isAdministrator) {
+    res.status(400).json({ error: 'Administrators already have unrestricted file access.' })
+    return
+  }
+
+  await prisma.user.update({
+    where: { username },
+    data: { deepAccess: Boolean(deepAccess) },
   })
 
   res.json({ ok: true })

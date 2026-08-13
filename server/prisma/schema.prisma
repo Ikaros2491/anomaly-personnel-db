@@ -15,6 +15,7 @@ model User {
   clearance       Int
   badgeId         String
   isAdministrator Boolean  @default(false)
+  deepAccess      Boolean  @default(false)
   isSystem        Boolean  @default(false)
   deactivated     Boolean  @default(false)
   createdAt       DateTime @default(now())
