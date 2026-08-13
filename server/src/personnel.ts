@@ -2,8 +2,14 @@ import type { PersonnelRecord as DbPersonnel } from '@prisma/client'
 import { randomUUID } from 'crypto'
 import type { SessionPayload } from './auth.js'
 
-export const TERMINATE_CONTAIN_FIELD_LABEL = 'How to Terminate / Contain'
+export const CONTAINMENT_PROCEDURES_FIELD_LABEL = 'Containment Procedures (Defection)'
 export const DEEP_ACCESS_REDACTION = '[REDACTED — DEEP ACCESS REQUIRED]'
+
+const DEEP_ACCESS_FIELD_LABELS = new Set([
+  CONTAINMENT_PROCEDURES_FIELD_LABEL,
+  'Containment Notes',
+  'How to Terminate / Contain', // legacy records
+])
 
 export interface PersonnelFieldDto {
   label: string
@@ -30,7 +36,7 @@ export function canViewDeepAccess(session: Pick<SessionPayload, 'isAdministrator
 }
 
 function isDeepAccessField(field: PersonnelFieldDto) {
-  return Boolean(field.requiresDeepAccess) || field.label === TERMINATE_CONTAIN_FIELD_LABEL
+  return Boolean(field.requiresDeepAccess) || DEEP_ACCESS_FIELD_LABELS.has(field.label)
 }
 
 export function sanitizePersonnelForViewer(

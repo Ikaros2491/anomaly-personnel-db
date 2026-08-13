@@ -55,8 +55,7 @@ export function EditScpForm({ record, onCancel, onSaved }: EditScpFormProps) {
     if (
       !form.physicalDescription.trim() ||
       !form.anomalousAbilities.trim() ||
-      !form.containmentProcedures.trim() ||
-      !form.terminateContainProcedures.trim()
+      !form.containmentProcedures.trim()
     ) {
       setError('All profile fields must be completed before saving.')
       return
@@ -169,18 +168,9 @@ export function EditScpForm({ record, onCancel, onSaved }: EditScpFormProps) {
             Containment Procedures (Defection)
             <textarea
               onChange={(event) => updateField('containmentProcedures', event.target.value)}
-              rows={4}
-              value={form.containmentProcedures}
-            />
-          </label>
-
-          <label className="form-span-2">
-            How to Terminate / Contain
-            <textarea
-              onChange={(event) => updateField('terminateContainProcedures', event.target.value)}
               placeholder="Visible only to Deep Access operators and administrators."
               rows={4}
-              value={form.terminateContainProcedures}
+              value={form.containmentProcedures}
             />
             <span className="hint">
               This section is redacted unless the viewing operator has Deep Access (admins always see it).

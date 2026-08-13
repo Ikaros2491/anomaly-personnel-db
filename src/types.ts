@@ -89,7 +89,6 @@ export interface ScpSubmission {
   physicalDescription: string
   anomalousAbilities: string
   containmentProcedures: string
-  terminateContainProcedures: string
 }
 
 export interface SignupFormData {
@@ -119,7 +118,6 @@ export const EMPTY_SCP_SUBMISSION: ScpSubmission = {
   physicalDescription: '',
   anomalousAbilities: '',
   containmentProcedures: '',
-  terminateContainProcedures: '',
 }
 
 export const EMPTY_SIGNUP_FORM: SignupFormData = {

@@ -135,7 +135,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
       if (pendingAction.type === 'grant-deep-access') {
         await setOperatorDeepAccessApi(pendingAction.operator.username, true)
         setMessage(
-          `${pendingAction.operator.username} granted Deep Access. They may need to sign out and back in to see terminate/contain sections.`,
+          `${pendingAction.operator.username} granted Deep Access. They may need to sign out and back in to see Containment Procedures.`,
         )
       }
 
@@ -203,7 +203,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
       return (
         <>
           Grant <strong>{action.operator.username}</strong> Deep Access? They will be able to view
-          the How to Terminate / Contain section on personnel files.
+          Containment Procedures on personnel files.
         </>
       )
     }
@@ -211,8 +211,8 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
     if (action.type === 'revoke-deep-access') {
       return (
         <>
-          Revoke Deep Access from <strong>{action.operator.username}</strong>? Terminate / contain
-          sections will appear redacted for them again.
+          Revoke Deep Access from <strong>{action.operator.username}</strong>? Containment
+          Procedures will appear redacted for them again.
         </>
       )
     }

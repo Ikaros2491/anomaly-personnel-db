@@ -1,7 +1,7 @@
 import { apiRequest } from './client'
 import type { PendingPersonnelSubmission, PersonnelRecord, ScpSubmission } from '../types'
 
-export const TERMINATE_CONTAIN_FIELD_LABEL = 'How to Terminate / Contain'
+export const CONTAINMENT_PROCEDURES_FIELD_LABEL = 'Containment Procedures (Defection)'
 
 export function buildPersonnelRecord(submission: ScpSubmission, createdBy: string): PersonnelRecord {
   const designation = submission.designation.trim()
@@ -29,13 +29,8 @@ function buildScpFields(submission: ScpSubmission, fileAuthor: string) {
     { label: 'Physical Description', value: submission.physicalDescription.trim(), minClearance: 1 as const },
     { label: 'Anomalous Abilities', value: submission.anomalousAbilities.trim(), minClearance: 1 as const },
     {
-      label: 'Containment Procedures (Defection)',
+      label: CONTAINMENT_PROCEDURES_FIELD_LABEL,
       value: submission.containmentProcedures.trim(),
-      minClearance: 1 as const,
-    },
-    {
-      label: TERMINATE_CONTAIN_FIELD_LABEL,
-      value: submission.terminateContainProcedures.trim(),
       minClearance: 1 as const,
       requiresDeepAccess: true,
     },
@@ -55,8 +50,7 @@ export function recordToScpSubmission(record: PersonnelRecord): ScpSubmission {
     picture: record.picture ?? '',
     physicalDescription: getFieldValue(record, 'Physical Description'),
     anomalousAbilities: getFieldValue(record, 'Anomalous Abilities'),
-    containmentProcedures: getFieldValue(record, 'Containment Procedures (Defection)'),
-    terminateContainProcedures: getFieldValue(record, TERMINATE_CONTAIN_FIELD_LABEL),
+    containmentProcedures: getFieldValue(record, CONTAINMENT_PROCEDURES_FIELD_LABEL),
   }
 }
 

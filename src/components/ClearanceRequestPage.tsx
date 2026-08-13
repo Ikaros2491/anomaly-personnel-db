@@ -193,7 +193,7 @@ export function ClearanceRequestPage({ onBack }: ClearanceRequestPageProps) {
                 <span className="hint">
                   {session.deepAccess
                     ? 'You already have Deep Access.'
-                    : 'Required to view How to Terminate / Contain sections.'}
+                    : 'Required to view Containment Procedures sections.'}
                 </span>
               </label>
 

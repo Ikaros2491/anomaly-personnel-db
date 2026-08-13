@@ -2,7 +2,7 @@ import 'dotenv/config'
 import bcrypt from 'bcryptjs'
 import { prisma } from './db.js'
 import { BUILTIN_PERSONNEL, SEED_USERS } from './seedData.js'
-import { personnelToRowData, TERMINATE_CONTAIN_FIELD_LABEL } from './personnel.js'
+import { personnelToRowData, CONTAINMENT_PROCEDURES_FIELD_LABEL } from './personnel.js'
 
 async function clearDatabase() {
   await prisma.pendingPersonnelSubmission.deleteMany()
@@ -51,11 +51,20 @@ export async function seedDatabase(options: { force?: boolean } = {}) {
     const existing = await prisma.personnelRecord.findUnique({ where: { recordUid } })
 
     if (existing) {
-      const currentFields = JSON.parse(existing.fieldsJson) as { label: string }[]
-      const hasTerminate = currentFields.some(
-        (field) => field.label === TERMINATE_CONTAIN_FIELD_LABEL,
+      const currentFields = JSON.parse(existing.fieldsJson) as {
+        label: string
+        requiresDeepAccess?: boolean
+      }[]
+      const hasLegacyTerminate = currentFields.some(
+        (field) => field.label === 'How to Terminate / Contain',
       )
-      if (!hasTerminate) {
+      const containmentNeedsDeepAccess = currentFields.some(
+        (field) =>
+          (field.label === 'Containment Notes' ||
+            field.label === CONTAINMENT_PROCEDURES_FIELD_LABEL) &&
+          !field.requiresDeepAccess,
+      )
+      if (hasLegacyTerminate || containmentNeedsDeepAccess) {
         await prisma.personnelRecord.update({
           where: { recordUid },
           data: { fieldsJson: JSON.stringify(record.fields) },
