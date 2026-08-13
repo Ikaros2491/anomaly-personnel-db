@@ -894,6 +894,17 @@ textarea:focus {
   color: #6a9a72;
 }
 
+.clearance-deep-access-toggle {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+}
+
+.clearance-deep-access-toggle input[type='checkbox'] {
+  width: auto;
+  justify-self: start;
+}
+
 .operators-list {
   list-style: none;
   margin: 0;

@@ -94,14 +94,13 @@ app.get('/api/auth/me', async (req, res) => {
   res.json({ session: toAuthSession(session) })
 })
 
-// ——— Sign-up ———
+// ——— Sign-up (instant CL1 account) ———
 
 app.post('/api/signup', async (req, res) => {
-  const { username, password, displayName, justification } = req.body as {
+  const { username, password, displayName } = req.body as {
     username?: string
     password?: string
     displayName?: string
-    justification?: string
   }
 
   const trimmedUsername = username?.trim() ?? ''
@@ -113,21 +112,23 @@ app.post('/api/signup', async (req, res) => {
   }
 
   const existingUser = await prisma.user.findUnique({ where: { username: trimmedUsername } })
-  const existingPending = await prisma.signupRequest.findUnique({
-    where: { username: trimmedUsername },
-  })
-
-  if (existingUser || existingPending) {
-    res.status(400).json({ error: 'That operator ID is already registered or pending review.' })
+  if (existingUser) {
+    res.status(400).json({ error: 'That operator ID is already registered.' })
     return
   }
 
-  await prisma.signupRequest.create({
+  const userCount = await prisma.user.count()
+  await prisma.user.create({
     data: {
       username: trimmedUsername,
       passwordHash: await bcrypt.hash(password, 10),
       displayName: trimmedDisplay,
-      justification: justification?.trim() ?? '',
+      clearance: 1,
+      badgeId: nextBadgeId(userCount),
+      isAdministrator: false,
+      deepAccess: false,
+      isSystem: false,
+      deactivated: false,
     },
   })
 
@@ -287,54 +288,182 @@ app.get('/api/personnel/:recordUid/is-user-created', requireAuth, async (req, re
   res.json({ isUserCreated: Boolean(record?.isUserCreated && !record.isBuiltin) })
 })
 
-// ——— Admin signups ———
+// ——— Clearance requests ———
 
-app.get('/api/signups/pending', requireAdmin, async (_req, res) => {
-  const pending = await prisma.signupRequest.findMany({ orderBy: { submittedAt: 'desc' } })
+app.post('/api/clearance-requests', requireAuth, async (req, res) => {
+  const session = (req as express.Request & { session: SessionPayload }).session
+
+  if (session.isAdministrator) {
+    res.status(403).json({ error: 'Administrators do not submit clearance requests.' })
+    return
+  }
+
+  const {
+    requestedClearance,
+    requestDeepAccess,
+    name,
+    rank,
+    job,
+    notes,
+  } = req.body as {
+    requestedClearance?: number
+    requestDeepAccess?: boolean
+    name?: string
+    rank?: string
+    job?: string
+    notes?: string
+  }
+
+  const trimmedName = name?.trim() ?? ''
+  const trimmedRank = rank?.trim() ?? ''
+  const trimmedJob = job?.trim() ?? ''
+  const trimmedNotes = notes?.trim() ?? ''
+  const clearance = Number(requestedClearance)
+  const wantsDeepAccess = Boolean(requestDeepAccess)
+
+  if (!trimmedName || !trimmedRank || !trimmedJob || !trimmedNotes) {
+    res.status(400).json({ error: 'Name, rank, job, and notes are required.' })
+    return
+  }
+
+  if (![1, 2, 3, 4, 5].includes(clearance)) {
+    res.status(400).json({ error: 'Requested clearance must be between 1 and 5.' })
+    return
+  }
+
+  const isClearanceUpgrade = clearance > session.clearance
+  const isDeepAccessUpgrade = wantsDeepAccess && !session.deepAccess
+
+  if (!isClearanceUpgrade && !isDeepAccessUpgrade) {
+    res.status(400).json({
+      error:
+        'Request a higher clearance than you currently hold, and/or Deep Access if you do not already have it.',
+    })
+    return
+  }
+
+  const existing = await prisma.clearanceRequest.findFirst({
+    where: { userId: session.userId },
+  })
+  if (existing) {
+    res.status(409).json({
+      error: 'You already have a pending clearance request. Wait for administrator review.',
+      existingId: existing.id,
+    })
+    return
+  }
+
+  const created = await prisma.clearanceRequest.create({
+    data: {
+      userId: session.userId,
+      username: session.username,
+      requestedClearance: clearance,
+      requestDeepAccess: wantsDeepAccess,
+      name: trimmedName,
+      rank: trimmedRank,
+      job: trimmedJob,
+      notes: trimmedNotes,
+    },
+  })
+
   res.json({
-    requests: pending.map((r) => ({
-      id: r.id,
-      username: r.username,
-      displayName: r.displayName,
-      justification: r.justification,
-      submittedAt: r.submittedAt.toISOString(),
+    ok: true,
+    request: {
+      id: created.id,
+      userId: created.userId,
+      username: created.username,
+      requestedClearance: created.requestedClearance,
+      requestDeepAccess: created.requestDeepAccess,
+      name: created.name,
+      rank: created.rank,
+      job: created.job,
+      notes: created.notes,
+      submittedAt: created.submittedAt.toISOString(),
+    },
+  })
+})
+
+app.get('/api/clearance-requests/mine', requireAuth, async (req, res) => {
+  const session = (req as express.Request & { session: SessionPayload }).session
+  const request = await prisma.clearanceRequest.findFirst({
+    where: { userId: session.userId },
+    orderBy: { submittedAt: 'desc' },
+  })
+
+  res.json({
+    request: request
+      ? {
+          id: request.id,
+          userId: request.userId,
+          username: request.username,
+          requestedClearance: request.requestedClearance,
+          requestDeepAccess: request.requestDeepAccess,
+          name: request.name,
+          rank: request.rank,
+          job: request.job,
+          notes: request.notes,
+          submittedAt: request.submittedAt.toISOString(),
+        }
+      : null,
+  })
+})
+
+app.get('/api/clearance-requests/pending', requireAdmin, async (_req, res) => {
+  const pending = await prisma.clearanceRequest.findMany({
+    orderBy: { submittedAt: 'desc' },
+    include: { user: true },
+  })
+
+  res.json({
+    requests: pending.map((request) => ({
+      id: request.id,
+      userId: request.userId,
+      username: request.username,
+      displayName: request.user.displayName,
+      currentClearance: request.user.clearance,
+      currentDeepAccess: request.user.deepAccess,
+      requestedClearance: request.requestedClearance,
+      requestDeepAccess: request.requestDeepAccess,
+      name: request.name,
+      rank: request.rank,
+      job: request.job,
+      notes: request.notes,
+      submittedAt: request.submittedAt.toISOString(),
     })),
   })
 })
 
-app.post('/api/signups/:id/approve', requireAdmin, async (req, res) => {
-  const { id } = req.params
-  const { clearance } = req.body as { clearance?: number }
-
-  const request = await prisma.signupRequest.findUnique({ where: { id } })
+app.post('/api/clearance-requests/:id/approve', requireAdmin, async (req, res) => {
+  const id = String(req.params.id)
+  const request = await prisma.clearanceRequest.findUnique({ where: { id } })
   if (!request) {
     res.status(404).json({ error: 'Request not found' })
     return
   }
 
-  const userCount = await prisma.user.count()
-  const user = await prisma.user.create({
+  const user = await prisma.user.findUnique({ where: { id: request.userId } })
+  if (!user || user.deactivated) {
+    await prisma.clearanceRequest.delete({ where: { id } })
+    res.status(404).json({ error: 'Operator not found or deactivated' })
+    return
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
     data: {
-      username: request.username,
-      passwordHash: request.passwordHash,
-      displayName: request.displayName,
-      clearance: clearance ?? 1,
-      badgeId: nextBadgeId(userCount),
-      isAdministrator: false,
-      deepAccess: false,
-      isSystem: false,
-      deactivated: false,
+      clearance: Math.max(user.clearance, request.requestedClearance),
+      deepAccess: request.requestDeepAccess ? true : user.deepAccess,
     },
   })
 
-  await prisma.signupRequest.delete({ where: { id } })
-  res.json({ ok: true, user: { username: user.username, displayName: user.displayName, clearance: user.clearance, badgeId: user.badgeId } })
+  await prisma.clearanceRequest.delete({ where: { id } })
+  res.json({ ok: true })
 })
 
-app.post('/api/signups/:id/reject', requireAdmin, async (req, res) => {
-  const { id } = req.params
+app.post('/api/clearance-requests/:id/reject', requireAdmin, async (req, res) => {
+  const id = String(req.params.id)
   try {
-    await prisma.signupRequest.delete({ where: { id } })
+    await prisma.clearanceRequest.delete({ where: { id } })
     res.json({ ok: true })
   } catch {
     res.status(404).json({ error: 'Request not found' })
@@ -384,6 +513,8 @@ app.patch('/api/operators/:username/clearance', requireAdmin, async (req, res) =
     where: { username },
     data: { clearance: clearance ?? user.clearance },
   })
+
+  await prisma.clearanceRequest.deleteMany({ where: { userId: user.id } })
 
   res.json({ ok: true })
 })
@@ -468,6 +599,8 @@ app.patch('/api/operators/:username/deep-access', requireAdmin, async (req, res)
     where: { username },
     data: { deepAccess: Boolean(deepAccess) },
   })
+
+  await prisma.clearanceRequest.deleteMany({ where: { userId: user.id } })
 
   res.json({ ok: true })
 })

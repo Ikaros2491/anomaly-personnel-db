@@ -29,12 +29,28 @@ export interface ManagedOperator {
   canRevokeDeepAccess: boolean
 }
 
-export interface SignupRequest {
+export interface ClearanceRequestFormData {
+  requestedClearance: ClearanceLevel
+  requestDeepAccess: boolean
+  name: string
+  rank: string
+  job: string
+  notes: string
+}
+
+export interface ClearanceRequest {
   id: string
+  userId: string
   username: string
-  password: string
-  displayName: string
-  justification: string
+  displayName?: string
+  currentClearance?: ClearanceLevel
+  currentDeepAccess?: boolean
+  requestedClearance: ClearanceLevel
+  requestDeepAccess: boolean
+  name: string
+  rank: string
+  job: string
+  notes: string
   submittedAt: string
 }
 
@@ -80,7 +96,6 @@ export interface SignupFormData {
   username: string
   password: string
   displayName: string
-  justification: string
 }
 
 export interface AuthSession {
@@ -92,7 +107,7 @@ export interface AuthSession {
   deepAccess: boolean
 }
 
-export type AppView = 'home' | 'search' | 'add' | 'approve' | 'operators'
+export type AppView = 'home' | 'search' | 'add' | 'approve' | 'operators' | 'clearance'
 
 export const CL2_MIN_CLEARANCE: ClearanceLevel = 2
 
@@ -111,5 +126,13 @@ export const EMPTY_SIGNUP_FORM: SignupFormData = {
   username: '',
   password: '',
   displayName: '',
-  justification: '',
+}
+
+export const EMPTY_CLEARANCE_REQUEST_FORM: ClearanceRequestFormData = {
+  requestedClearance: 2,
+  requestDeepAccess: false,
+  name: '',
+  rank: '',
+  job: '',
+  notes: '',
 }

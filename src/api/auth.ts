@@ -26,18 +26,17 @@ export async function submitSignupApi(
   username: string,
   password: string,
   displayName: string,
-  justification: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     await apiRequest('/api/signup', {
       method: 'POST',
-      body: JSON.stringify({ username, password, displayName, justification }),
+      body: JSON.stringify({ username, password, displayName }),
     })
     return { ok: true }
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : 'Sign-up request failed.',
+      error: error instanceof Error ? error.message : 'Account creation failed.',
     }
   }
 }

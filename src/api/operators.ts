@@ -1,21 +1,5 @@
 import { apiRequest } from './client'
-import type { ClearanceLevel, ManagedOperator, SignupRequest } from '../types'
-
-export async function getPendingSignupsApi(): Promise<SignupRequest[]> {
-  const data = await apiRequest<{ requests: SignupRequest[] }>('/api/signups/pending')
-  return data.requests
-}
-
-export async function approveSignupApi(requestId: string, clearance: ClearanceLevel) {
-  return apiRequest('/api/signups/' + requestId + '/approve', {
-    method: 'POST',
-    body: JSON.stringify({ clearance }),
-  })
-}
-
-export async function rejectSignupApi(requestId: string) {
-  return apiRequest('/api/signups/' + requestId + '/reject', { method: 'POST' })
-}
+import type { ClearanceLevel, ManagedOperator } from '../types'
 
 export async function getOperatorsApi(): Promise<ManagedOperator[]> {
   const data = await apiRequest<{ operators: ManagedOperator[] }>('/api/operators')

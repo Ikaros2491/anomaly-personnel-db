@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
 import {
+  approveClearanceRequestApi,
+  getPendingClearanceRequestsApi,
+  rejectClearanceRequestApi,
+} from '../api/clearanceRequests'
+import {
   approvePersonnelApi,
   getPendingPersonnelApi,
   rejectPersonnelApi,
 } from '../api/personnel'
-import {
-  approveSignupApi,
-  getPendingSignupsApi,
-  rejectSignupApi,
-} from '../api/operators'
+import { CLEARANCE_LABELS } from '../data/mockDatabase'
 import { useAuth } from '../context/AuthContext'
 import { AnorepLogo } from './AnorepLogo'
-import type { ClearanceLevel, PendingPersonnelSubmission, SignupRequest } from '../types'
+import type { ClearanceRequest, PendingPersonnelSubmission } from '../types'
 
 interface ApprovalPageProps {
   onBack: () => void
@@ -23,8 +24,7 @@ function formatDate(iso: string) {
 
 export function ApprovalPage({ onBack }: ApprovalPageProps) {
   const { session } = useAuth()
-  const [signupClearance, setSignupClearance] = useState<Record<string, ClearanceLevel>>({})
-  const [pendingSignups, setPendingSignups] = useState<SignupRequest[]>([])
+  const [pendingClearance, setPendingClearance] = useState<ClearanceRequest[]>([])
   const [pendingFiles, setPendingFiles] = useState<PendingPersonnelSubmission[]>([])
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -33,9 +33,9 @@ export function ApprovalPage({ onBack }: ApprovalPageProps) {
     if (!session?.isAdministrator) return
 
     setLoading(true)
-    Promise.all([getPendingSignupsApi(), getPendingPersonnelApi()])
-      .then(([signups, files]) => {
-        setPendingSignups(signups)
+    Promise.all([getPendingClearanceRequestsApi(), getPendingPersonnelApi()])
+      .then(([requests, files]) => {
+        setPendingClearance(requests)
         setPendingFiles(files)
       })
       .finally(() => setLoading(false))
@@ -44,29 +44,31 @@ export function ApprovalPage({ onBack }: ApprovalPageProps) {
   if (!session?.isAdministrator) return null
 
   async function reload() {
-    const [signups, files] = await Promise.all([getPendingSignupsApi(), getPendingPersonnelApi()])
-    setPendingSignups(signups)
+    const [requests, files] = await Promise.all([
+      getPendingClearanceRequestsApi(),
+      getPendingPersonnelApi(),
+    ])
+    setPendingClearance(requests)
     setPendingFiles(files)
   }
 
-  async function handleApproveSignup(requestId: string) {
-    const clearance = signupClearance[requestId] ?? 1
+  async function handleApproveClearance(requestId: string) {
     try {
-      await approveSignupApi(requestId, clearance)
-      setMessage(`Sign-up request approved at clearance ${clearance}.`)
+      await approveClearanceRequestApi(requestId)
+      setMessage('Clearance request approved. Operator access updated.')
       await reload()
     } catch {
-      setMessage('Failed to approve sign-up request.')
+      setMessage('Failed to approve clearance request.')
     }
   }
 
-  async function handleRejectSignup(requestId: string) {
+  async function handleRejectClearance(requestId: string) {
     try {
-      await rejectSignupApi(requestId)
-      setMessage('Sign-up request denied.')
+      await rejectClearanceRequestApi(requestId)
+      setMessage('Clearance request denied.')
       await reload()
     } catch {
-      setMessage('Failed to deny sign-up request.')
+      setMessage('Failed to deny clearance request.')
     }
   }
 
@@ -110,8 +112,8 @@ export function ApprovalPage({ onBack }: ApprovalPageProps) {
       <section className="approval-intro panel">
         <h1>Approval Queue</h1>
         <p>
-          Review pending operator access requests and user-submitted anomaly files before they
-          become visible in the personnel search registry.
+          Review clearance elevation requests and user-submitted anomaly files before elevated
+          access or registry indexing takes effect.
         </p>
         {message && (
           <p className="success-text" role="status">
@@ -123,56 +125,55 @@ export function ApprovalPage({ onBack }: ApprovalPageProps) {
 
       <section className="approval-section panel">
         <header className="approval-section-header">
-          <h2>Sign-Up Requests</h2>
-          <span className="approval-count">{pendingSignups.length} pending</span>
+          <h2>Clearance Requests</h2>
+          <span className="approval-count">{pendingClearance.length} pending</span>
         </header>
 
-        {pendingSignups.length === 0 ? (
-          <p className="approval-empty">No pending sign-up requests.</p>
+        {pendingClearance.length === 0 ? (
+          <p className="approval-empty">No pending clearance requests.</p>
         ) : (
           <ul className="approval-list">
-            {pendingSignups.map((request) => (
+            {pendingClearance.map((request) => (
               <li className="approval-item" key={request.id}>
                 <div className="approval-item-body">
-                  <p className="approval-item-title">{request.displayName}</p>
+                  <p className="approval-item-title">
+                    {request.name}{' '}
+                    <span className="approval-item-id">({request.username})</span>
+                  </p>
                   <p className="approval-item-meta">
-                    Operator ID: <strong>{request.username}</strong> — Submitted{' '}
+                    Current: CL{request.currentClearance}
+                    {request.currentDeepAccess ? ' + Deep Access' : ''} → Requested: CL
+                    {request.requestedClearance} —{' '}
+                    {CLEARANCE_LABELS[request.requestedClearance]}
+                    {request.requestDeepAccess ? ' + Deep Access' : ''} — Submitted{' '}
                     {formatDate(request.submittedAt)}
                   </p>
-                  {request.justification && (
-                    <p className="approval-item-detail">
-                      <span>Justification:</span> {request.justification}
-                    </p>
-                  )}
-                  <label className="approval-clearance-select">
-                    Assign clearance on approval
-                    <select
-                      onChange={(e) =>
-                        setSignupClearance((current) => ({
-                          ...current,
-                          [request.id]: Number(e.target.value) as ClearanceLevel,
-                        }))
-                      }
-                      value={signupClearance[request.id] ?? 1}
-                    >
-                      <option value={1}>1 — Restricted</option>
-                      <option value={2}>2 — Confidential</option>
-                      <option value={3}>3 — Secret</option>
-                      <option value={4}>4 — Top Secret</option>
-                    </select>
-                  </label>
+                  <dl className="approval-preview-fields">
+                    <div className="approval-preview-row">
+                      <dt>Rank</dt>
+                      <dd>{request.rank}</dd>
+                    </div>
+                    <div className="approval-preview-row">
+                      <dt>Job</dt>
+                      <dd>{request.job}</dd>
+                    </div>
+                    <div className="approval-preview-row">
+                      <dt>Notes</dt>
+                      <dd>{request.notes}</dd>
+                    </div>
+                  </dl>
                 </div>
                 <div className="approval-actions">
                   <button
                     className="btn-primary"
-                    onClick={() => void handleApproveSignup(request.id)}
+                    onClick={() => void handleApproveClearance(request.id)}
                     type="button"
                   >
                     Approve
                   </button>
                   <button
                     className="btn-ghost btn-reject"
-                    onClick={() => void handleRejectSignup(request.id)}
+                    onClick={() => void handleRejectClearance(request.id)}
                     type="button"
                   >
                     Deny

@@ -8,26 +8,35 @@ datasource db {
 }
 
 model User {
-  id              String   @id @default(uuid())
-  username        String   @unique
-  passwordHash    String
-  displayName     String
-  clearance       Int
-  badgeId         String
-  isAdministrator Boolean  @default(false)
-  deepAccess      Boolean  @default(false)
-  isSystem        Boolean  @default(false)
-  deactivated     Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  id                String             @id @default(uuid())
+  username          String             @unique
+  passwordHash      String
+  displayName       String
+  clearance         Int
+  badgeId           String
+  isAdministrator   Boolean            @default(false)
+  deepAccess        Boolean            @default(false)
+  isSystem          Boolean            @default(false)
+  deactivated       Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  clearanceRequests ClearanceRequest[]
 }
 
-model SignupRequest {
-  id            String   @id @default(uuid())
-  username      String   @unique
-  passwordHash  String
-  displayName   String
-  justification String
-  submittedAt   DateTime @default(now())
+model ClearanceRequest {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  username           String
+  requestedClearance Int
+  requestDeepAccess  Boolean  @default(false)
+  name               String
+  rank               String
+  job                String
+  notes              String
+  submittedAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([submittedAt])
 }
 
 model PersonnelRecord {

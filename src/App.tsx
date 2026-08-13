@@ -6,6 +6,7 @@ import { SearchTerminal } from './components/SearchTerminal'
 import { AddScpForm } from './components/AddScpForm'
 import { ApprovalPage } from './components/ApprovalPage'
 import { OperatorManagementPage } from './components/OperatorManagementPage'
+import { ClearanceRequestPage } from './components/ClearanceRequestPage'
 import type { AppView } from './types'
 import './App.css'
 
@@ -39,6 +40,13 @@ function AppContent() {
 
   if (view === 'add') {
     return <AddScpForm onBack={() => setView('home')} />
+  }
+
+  if (view === 'clearance') {
+    if (session.isAdministrator) {
+      return <HomeMenu onNavigate={setView} />
+    }
+    return <ClearanceRequestPage onBack={() => setView('home')} />
   }
 
   if (view === 'approve') {

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
+import { getMyClearanceRequestApi, getPendingClearanceRequestsApi } from '../api/clearanceRequests'
+import { getOperatorsApi } from '../api/operators'
 import { getPersonnelStatsApi } from '../api/personnel'
-import { getOperatorsApi, getPendingSignupsApi } from '../api/operators'
 import { canRegisterScp, getAccessLabel } from '../data/access'
 import { useAuth } from '../context/AuthContext'
 import { AnorepLogo } from './AnorepLogo'
+import type { AppView } from '../types'
 
 interface HomeMenuProps {
-  onNavigate: (view: 'search' | 'add' | 'approve' | 'operators') => void
+  onNavigate: (view: AppView) => void
 }
 
 export function HomeMenu({ onNavigate }: HomeMenuProps) {
@@ -14,6 +16,7 @@ export function HomeMenu({ onNavigate }: HomeMenuProps) {
   const [userCreatedCount, setUserCreatedCount] = useState(0)
   const [pendingApprovals, setPendingApprovals] = useState(0)
   const [operatorCount, setOperatorCount] = useState(0)
+  const [hasPendingClearanceRequest, setHasPendingClearanceRequest] = useState(false)
 
   useEffect(() => {
     if (!session) return
@@ -23,15 +26,23 @@ export function HomeMenu({ onNavigate }: HomeMenuProps) {
       .catch(() => setUserCreatedCount(0))
 
     if (session.isAdministrator) {
-      Promise.all([getPendingSignupsApi(), getPersonnelStatsApi(), getOperatorsApi()])
-        .then(([signups, stats, operators]) => {
-          setPendingApprovals(signups.length + stats.pending)
+      Promise.all([
+        getPendingClearanceRequestsApi(),
+        getPersonnelStatsApi(),
+        getOperatorsApi(),
+      ])
+        .then(([requests, stats, operators]) => {
+          setPendingApprovals(requests.length + stats.pending)
           setOperatorCount(operators.length)
         })
         .catch(() => {
           setPendingApprovals(0)
           setOperatorCount(0)
         })
+    } else {
+      getMyClearanceRequestApi()
+        .then((request) => setHasPendingClearanceRequest(Boolean(request)))
+        .catch(() => setHasPendingClearanceRequest(false))
     }
   }, [session])
 
@@ -71,7 +82,7 @@ export function HomeMenu({ onNavigate }: HomeMenuProps) {
             ? ' Administrator access grants full system visibility, approval authority, and file registration privileges.'
             : canManageRecords
               ? ' As a CL2+ operator, you may register new SCP personnel files pending administrator approval.'
-              : ' CL2 clearance is required to register new SCP files.'}
+              : ' CL2 clearance is required to register new SCP files. Request higher clearance below.'}
         </p>
         {userCreatedCount > 0 && (
           <p className="home-stat">
@@ -107,8 +118,26 @@ export function HomeMenu({ onNavigate }: HomeMenuProps) {
           <div aria-disabled="true" className="menu-card panel menu-card--locked">
             <span className="menu-card-label">Restricted</span>
             <strong>Register New SCP File</strong>
-            <p>CL2 clearance required. Contact your site director for elevated access.</p>
+            <p>CL2 clearance required. Request higher clearance from the menu card below.</p>
           </div>
+        )}
+
+        {!session.isAdministrator && (
+          <button
+            className="menu-card panel menu-card--privileged"
+            onClick={() => onNavigate('clearance')}
+            type="button"
+          >
+            <span className="menu-card-label">
+              Operator Access
+              {hasPendingClearanceRequest && <span className="pending-badge">1</span>}
+            </span>
+            <strong>Request Higher Clearance</strong>
+            <p>
+              Request elevated clearance and/or Deep Access. Include your name, rank, job, and
+              justification for administrator review.
+            </p>
+          </button>
         )}
 
         {session.isAdministrator && (
@@ -126,8 +155,8 @@ export function HomeMenu({ onNavigate }: HomeMenuProps) {
               </span>
               <strong>Approval Queue</strong>
               <p>
-                Review pending sign-up requests and user-submitted anomaly files before they go
-                live.
+                Review clearance elevation requests and user-submitted anomaly files before they
+                go live.
               </p>
             </button>
 
@@ -139,8 +168,8 @@ export function HomeMenu({ onNavigate }: HomeMenuProps) {
               <span className="menu-card-label">Administrator — {operatorCount} operators</span>
               <strong>Operator Management</strong>
               <p>
-                View all registered personnel, change clearance, deactivate accounts, or delete
-                approved sign-ups.
+                View registered personnel, change clearance, grant Deep Access, deactivate
+                accounts, or delete operators.
               </p>
             </button>
           </>

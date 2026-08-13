@@ -6,7 +6,7 @@ import { personnelToRowData, TERMINATE_CONTAIN_FIELD_LABEL } from './personnel.j
 
 async function clearDatabase() {
   await prisma.pendingPersonnelSubmission.deleteMany()
-  await prisma.signupRequest.deleteMany()
+  await prisma.clearanceRequest.deleteMany()
   await prisma.personnelRecord.deleteMany()
   await prisma.user.deleteMany()
 }

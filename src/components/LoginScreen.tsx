@@ -50,7 +50,6 @@ export function LoginScreen() {
       signupForm.username,
       signupForm.password,
       signupForm.displayName,
-      signupForm.justification,
     )
 
     setSubmitting(false)
@@ -60,9 +59,11 @@ export function LoginScreen() {
       return
     }
 
+    setUsername(signupForm.username)
+    setPassword('')
     setSignupForm(EMPTY_SIGNUP_FORM)
     setSuccess(
-      'Access request submitted. An administrator must approve your account before you can sign in.',
+      'Account created at Clearance Level 1. Sign in now, then request higher clearance from the main menu if needed.',
     )
     setMode('signin')
   }
@@ -103,7 +104,7 @@ export function LoginScreen() {
               onClick={() => switchMode('signup')}
               type="button"
             >
-              Request Access
+              Create Account
             </button>
           </div>
 
@@ -157,10 +158,10 @@ export function LoginScreen() {
           ) : (
             <>
               <header className="sign-in-header">
-                <h2 id="signup-heading">Request Access</h2>
+                <h2 id="signup-heading">Create Account</h2>
                 <p>
-                  Submit a sign-up request for administrator review. You cannot sign in until
-                  approved.
+                  New accounts are created immediately at Clearance Level 1. Request higher
+                  clearance after signing in.
                 </p>
               </header>
 
@@ -202,18 +203,6 @@ export function LoginScreen() {
                   />
                 </label>
 
-                <label>
-                  Justification
-                  <textarea
-                    onChange={(event) =>
-                      setSignupForm((f) => ({ ...f, justification: event.target.value }))
-                    }
-                    placeholder="Reason for access request, assignment, or clearance need..."
-                    rows={3}
-                    value={signupForm.justification}
-                  />
-                </label>
-
                 {error && (
                   <p className="error-text" role="alert">
                     {error}
@@ -221,7 +210,7 @@ export function LoginScreen() {
                 )}
 
                 <button className="btn-primary btn-sign-in" disabled={submitting} type="submit">
-                  {submitting ? 'Submitting...' : 'Submit Request'}
+                  {submitting ? 'Creating...' : 'Create Account'}
                 </button>
               </form>
             </>
