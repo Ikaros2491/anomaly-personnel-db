@@ -72,6 +72,8 @@ On the API host, set:
 
 Then point `VITE_API_URL` at that API URL in GitHub Actions variables.
 
+Auth uses a JWT both as a cross-site cookie and as an `Authorization: Bearer` token stored in the browser. The bearer token is required on many phones: Safari and mobile Chrome often block third-party cookies when the SPA (`anorep.com`) and API (`anorep-api.onrender.com`) are on different sites, which otherwise looks like “signed in but no data.”
+
 ## Demo Accounts
 
 | Operator ID | Access Code | Clearance |

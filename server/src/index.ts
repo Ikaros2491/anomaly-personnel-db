@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto'
 import { prisma } from './db.js'
 import {
   clearAuthCookie,
+  createAuthToken,
   getSession,
   requireAdmin,
   requireAuth,
@@ -28,6 +29,7 @@ app.use(
   cors({
     origin: corsOrigins,
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 )
 app.use(express.json({ limit: '10mb' }))
@@ -77,7 +79,10 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   setAuthCookie(res, session)
-  res.json({ session: toAuthSession(session) })
+  // Also return the JWT in the body. Mobile Safari / Chrome often block the
+  // cross-site Set-Cookie from anorep-api.onrender.com when the SPA is on
+  // anorep.com; the frontend stores this token and sends Authorization.
+  res.json({ session: toAuthSession(session), token: createAuthToken(session) })
 })
 
 app.post('/api/auth/logout', (_req, res) => {

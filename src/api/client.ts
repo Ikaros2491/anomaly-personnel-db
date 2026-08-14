@@ -10,15 +10,43 @@ export class ApiError extends Error {
 }
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
+const AUTH_TOKEN_KEY = 'anorep_auth_token'
+
+export function getStoredAuthToken(): string | null {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function setStoredAuthToken(token: string | null) {
+  try {
+    if (token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, token)
+    } else {
+      localStorage.removeItem(AUTH_TOKEN_KEY)
+    }
+  } catch {
+    // Private browsing / blocked storage — rely on in-memory session only.
+  }
+}
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> | undefined),
+  }
+
+  const token = getStoredAuthToken()
+  if (token && !headers.Authorization) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers ?? {}),
-    },
+    headers,
   })
 
   const data = await response.json().catch(() => ({}))

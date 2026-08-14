@@ -29,17 +29,29 @@ export function getJwtSecret(): string {
   return process.env.JWT_SECRET ?? 'dev-insecure-secret'
 }
 
+export function createAuthToken(session: SessionPayload): string {
+  return jwt.sign(session, getJwtSecret(), { expiresIn: '7d' })
+}
+
 export function setAuthCookie(res: Response, session: SessionPayload) {
-  const token = jwt.sign(session, getJwtSecret(), { expiresIn: '7d' })
-  res.cookie(COOKIE_NAME, token, cookieOptions())
+  res.cookie(COOKIE_NAME, createAuthToken(session), cookieOptions())
 }
 
 export function clearAuthCookie(res: Response) {
   res.clearCookie(COOKIE_NAME, cookieOptions())
 }
 
+function readBearerToken(req: Request): string | null {
+  const header = req.headers.authorization
+  if (!header) return null
+  const match = /^Bearer\s+(.+)$/i.exec(header.trim())
+  return match?.[1]?.trim() || null
+}
+
 export async function getSession(req: Request): Promise<SessionPayload | null> {
-  const token = req.cookies?.[COOKIE_NAME]
+  // Prefer Authorization bearer tokens so mobile browsers that block
+  // third-party cookies (anorep.com → anorep-api.onrender.com) still work.
+  const token = readBearerToken(req) ?? req.cookies?.[COOKIE_NAME]
   if (!token) return null
 
   try {
