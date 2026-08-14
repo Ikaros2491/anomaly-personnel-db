@@ -38,7 +38,7 @@ export async function seedDatabase(options: { force?: boolean } = {}) {
         clearance: user.clearance,
         badgeId: user.badgeId,
         isAdministrator: user.isAdministrator,
-        deepAccess: false,
+        containmentAccess: false,
         isSystem: true,
         deactivated: false,
       },
@@ -53,18 +53,20 @@ export async function seedDatabase(options: { force?: boolean } = {}) {
     if (existing) {
       const currentFields = JSON.parse(existing.fieldsJson) as {
         label: string
+        requiresContainmentAccess?: boolean
         requiresDeepAccess?: boolean
       }[]
       const hasLegacyTerminate = currentFields.some(
         (field) => field.label === 'How to Terminate / Contain',
       )
-      const containmentNeedsDeepAccess = currentFields.some(
+      const containmentNeedsAccessFlag = currentFields.some(
         (field) =>
           (field.label === 'Containment Notes' ||
             field.label === CONTAINMENT_PROCEDURES_FIELD_LABEL) &&
+          !field.requiresContainmentAccess &&
           !field.requiresDeepAccess,
       )
-      if (hasLegacyTerminate || containmentNeedsDeepAccess) {
+      if (hasLegacyTerminate || containmentNeedsAccessFlag) {
         await prisma.personnelRecord.update({
           where: { recordUid },
           data: { fieldsJson: JSON.stringify(record.fields) },

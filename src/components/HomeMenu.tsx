@@ -134,7 +134,7 @@ export function HomeMenu({ onNavigate }: HomeMenuProps) {
             </span>
             <strong>Request Higher Clearance</strong>
             <p>
-              Request elevated clearance and/or Deep Access. Include your name, rank, job, and
+              Request elevated clearance and/or Containment Access. Include your name, rank, job, and
               justification for administrator review.
             </p>
           </button>
@@ -168,7 +168,7 @@ export function HomeMenu({ onNavigate }: HomeMenuProps) {
               <span className="menu-card-label">Administrator — {operatorCount} operators</span>
               <strong>Operator Management</strong>
               <p>
-                View registered personnel, change clearance, grant Deep Access, deactivate
+                View registered personnel, change clearance, grant Containment Access, deactivate
                 accounts, or delete operators.
               </p>
             </button>

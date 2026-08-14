@@ -19,19 +19,19 @@ export interface ManagedOperator {
   badgeId: string
   source: OperatorSource
   isAdministrator: boolean
-  deepAccess: boolean
+  containmentAccess: boolean
   deactivated: boolean
   canDelete: boolean
   canModify: boolean
   canGrantAdmin: boolean
   canRevokeAdmin: boolean
-  canGrantDeepAccess: boolean
-  canRevokeDeepAccess: boolean
+  canGrantContainmentAccess: boolean
+  canRevokeContainmentAccess: boolean
 }
 
 export interface ClearanceRequestFormData {
   requestedClearance: ClearanceLevel
-  requestDeepAccess: boolean
+  requestContainmentAccess: boolean
   name: string
   rank: string
   job: string
@@ -44,9 +44,9 @@ export interface ClearanceRequest {
   username: string
   displayName?: string
   currentClearance?: ClearanceLevel
-  currentDeepAccess?: boolean
+  currentContainmentAccess?: boolean
   requestedClearance: ClearanceLevel
-  requestDeepAccess: boolean
+  requestContainmentAccess: boolean
   name: string
   rank: string
   job: string
@@ -58,7 +58,7 @@ export interface PersonnelField {
   label: string
   value: string
   minClearance: ClearanceLevel
-  requiresDeepAccess?: boolean
+  requiresContainmentAccess?: boolean
   redacted?: boolean
 }
 
@@ -103,7 +103,7 @@ export interface AuthSession {
   clearance: ClearanceLevel
   badgeId: string
   isAdministrator: boolean
-  deepAccess: boolean
+  containmentAccess: boolean
 }
 
 export type AppView = 'home' | 'search' | 'add' | 'approve' | 'operators' | 'clearance'
@@ -128,7 +128,7 @@ export const EMPTY_SIGNUP_FORM: SignupFormData = {
 
 export const EMPTY_CLEARANCE_REQUEST_FORM: ClearanceRequestFormData = {
   requestedClearance: 2,
-  requestDeepAccess: false,
+  requestContainmentAccess: false,
   name: '',
   rank: '',
   job: '',

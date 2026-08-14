@@ -5,7 +5,7 @@ import {
   getOperatorsApi,
   resetOperatorPasswordApi,
   setOperatorAdministratorApi,
-  setOperatorDeepAccessApi,
+  setOperatorContainmentAccessApi,
   setOperatorDeactivatedApi,
   updateOperatorClearanceApi,
 } from '../api/operators'
@@ -22,8 +22,8 @@ type PendingAction =
   | { type: 'delete'; operator: ManagedOperator }
   | { type: 'grant-admin'; operator: ManagedOperator }
   | { type: 'revoke-admin'; operator: ManagedOperator }
-  | { type: 'grant-deep-access'; operator: ManagedOperator }
-  | { type: 'revoke-deep-access'; operator: ManagedOperator }
+  | { type: 'grant-containment-access'; operator: ManagedOperator }
+  | { type: 'revoke-containment-access'; operator: ManagedOperator }
   | { type: 'reset-password'; operator: ManagedOperator }
 
 export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) {
@@ -60,7 +60,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
         operator.badgeId,
         operator.source === 'system' ? 'system account' : 'approved sign-up',
         operator.isAdministrator ? 'administrator admin' : '',
-        operator.deepAccess ? 'deep access' : '',
+        operator.containmentAccess ? 'containment access' : '',
         operator.deactivated ? 'deactivated inactive' : 'active',
         CLEARANCE_LABELS[operator.clearance],
         String(operator.clearance),
@@ -132,16 +132,16 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
         setMessage(`${pendingAction.operator.username} administrator access revoked.`)
       }
 
-      if (pendingAction.type === 'grant-deep-access') {
-        await setOperatorDeepAccessApi(pendingAction.operator.username, true)
+      if (pendingAction.type === 'grant-containment-access') {
+        await setOperatorContainmentAccessApi(pendingAction.operator.username, true)
         setMessage(
-          `${pendingAction.operator.username} granted Deep Access. They may need to sign out and back in to see Containment Procedures.`,
+          `${pendingAction.operator.username} granted Containment Access. They may need to sign out and back in to see Containment Procedures.`,
         )
       }
 
-      if (pendingAction.type === 'revoke-deep-access') {
-        await setOperatorDeepAccessApi(pendingAction.operator.username, false)
-        setMessage(`${pendingAction.operator.username} Deep Access revoked.`)
+      if (pendingAction.type === 'revoke-containment-access') {
+        await setOperatorContainmentAccessApi(pendingAction.operator.username, false)
+        setMessage(`${pendingAction.operator.username} Containment Access revoked.`)
       }
 
       if (pendingAction.type === 'reset-password') {
@@ -199,19 +199,19 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
       )
     }
 
-    if (action.type === 'grant-deep-access') {
+    if (action.type === 'grant-containment-access') {
       return (
         <>
-          Grant <strong>{action.operator.username}</strong> Deep Access? They will be able to view
+          Grant <strong>{action.operator.username}</strong> Containment Access? They will be able to view
           Containment Procedures on personnel files.
         </>
       )
     }
 
-    if (action.type === 'revoke-deep-access') {
+    if (action.type === 'revoke-containment-access') {
       return (
         <>
-          Revoke Deep Access from <strong>{action.operator.username}</strong>? Containment
+          Revoke Containment Access from <strong>{action.operator.username}</strong>? Containment
           Procedures will appear redacted for them again.
         </>
       )
@@ -246,7 +246,7 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
         <h1>Registered Operators</h1>
         <p>
           Manage all signed-in personnel — system accounts and approved sign-ups. Grant
-          administrator access or Deep Access to trusted operators, change clearance, deactivate
+          administrator access or Containment Access to trusted operators, change clearance, deactivate
           accounts, or delete approved sign-ups.
           {isDoll && ' Doll clearance can reset operator access codes without viewing them.'}
         </p>
@@ -330,8 +330,8 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                     {operator.isAdministrator && (
                       <span className="admin-badge operator-admin-tag"> ADMINISTRATOR</span>
                     )}
-                    {operator.deepAccess && (
-                      <span className="admin-badge operator-admin-tag"> DEEP ACCESS</span>
+                    {operator.containmentAccess && (
+                      <span className="admin-badge operator-admin-tag"> CONTAINMENT ACCESS</span>
                     )}
                     {operator.deactivated && (
                       <span className="operator-status-tag"> DEACTIVATED</span>
@@ -385,23 +385,23 @@ export function OperatorManagementPage({ onBack }: OperatorManagementPageProps) 
                     </button>
                   )}
 
-                  {operator.canGrantDeepAccess && (
+                  {operator.canGrantContainmentAccess && (
                     <button
                       className="btn-primary btn-small"
-                      onClick={() => openPendingAction({ type: 'grant-deep-access', operator })}
+                      onClick={() => openPendingAction({ type: 'grant-containment-access', operator })}
                       type="button"
                     >
-                      Grant Deep Access
+                      Grant Containment Access
                     </button>
                   )}
 
-                  {operator.canRevokeDeepAccess && (
+                  {operator.canRevokeContainmentAccess && (
                     <button
                       className="btn-ghost btn-reject btn-small"
-                      onClick={() => openPendingAction({ type: 'revoke-deep-access', operator })}
+                      onClick={() => openPendingAction({ type: 'revoke-containment-access', operator })}
                       type="button"
                     >
-                      Revoke Deep Access
+                      Revoke Containment Access
                     </button>
                   )}
 

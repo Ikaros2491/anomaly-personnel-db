@@ -3,9 +3,9 @@ import { randomUUID } from 'crypto'
 import type { SessionPayload } from './auth.js'
 
 export const CONTAINMENT_PROCEDURES_FIELD_LABEL = 'Containment Procedures (Defection)'
-export const DEEP_ACCESS_REDACTION = '[REDACTED — DEEP ACCESS REQUIRED]'
+export const CONTAINMENT_ACCESS_REDACTION = '[REDACTED — CONTAINMENT ACCESS REQUIRED]'
 
-const DEEP_ACCESS_FIELD_LABELS = new Set([
+const CONTAINMENT_ACCESS_FIELD_LABELS = new Set([
   CONTAINMENT_PROCEDURES_FIELD_LABEL,
   'Containment Notes',
   'How to Terminate / Contain', // legacy records
@@ -15,6 +15,8 @@ export interface PersonnelFieldDto {
   label: string
   value: string
   minClearance: number
+  requiresContainmentAccess?: boolean
+  /** @deprecated Legacy key from before the Containment Access rename */
   requiresDeepAccess?: boolean
   redacted?: boolean
 }
@@ -31,29 +33,41 @@ export interface PersonnelRecordDto {
   isUserCreated?: boolean
 }
 
-export function canViewDeepAccess(session: Pick<SessionPayload, 'isAdministrator' | 'deepAccess'>) {
-  return session.isAdministrator || session.deepAccess
+export function canViewContainmentAccess(session: Pick<SessionPayload, 'isAdministrator' | 'containmentAccess'>) {
+  return session.isAdministrator || session.containmentAccess
 }
 
-function isDeepAccessField(field: PersonnelFieldDto) {
-  return Boolean(field.requiresDeepAccess) || DEEP_ACCESS_FIELD_LABELS.has(field.label)
+function isContainmentAccessField(field: PersonnelFieldDto) {
+  return (
+    Boolean(field.requiresContainmentAccess) ||
+    Boolean(field.requiresDeepAccess) ||
+    CONTAINMENT_ACCESS_FIELD_LABELS.has(field.label)
+  )
+}
+
+function normalizePersonnelFields(fields: PersonnelFieldDto[]): PersonnelFieldDto[] {
+  return fields.map((field) => {
+    if (!field.requiresDeepAccess || field.requiresContainmentAccess) return field
+    const { requiresDeepAccess: _legacy, ...rest } = field
+    return { ...rest, requiresContainmentAccess: true }
+  })
 }
 
 export function sanitizePersonnelForViewer(
   record: PersonnelRecordDto,
-  session: Pick<SessionPayload, 'isAdministrator' | 'deepAccess'>,
+  session: Pick<SessionPayload, 'isAdministrator' | 'containmentAccess'>,
 ): PersonnelRecordDto {
-  if (canViewDeepAccess(session)) return record
+  if (canViewContainmentAccess(session)) return record
 
   return {
     ...record,
     fields: record.fields.map((field) => {
-      if (!isDeepAccessField(field)) return field
+      if (!isContainmentAccessField(field)) return field
 
       return {
         ...field,
-        requiresDeepAccess: true,
-        value: DEEP_ACCESS_REDACTION,
+        requiresContainmentAccess: true,
+        value: CONTAINMENT_ACCESS_REDACTION,
         redacted: true,
       }
     }),
@@ -67,7 +81,7 @@ export function rowToPersonnel(row: DbPersonnel): PersonnelRecordDto {
     name: row.name,
     aliases: JSON.parse(row.aliasesJson),
     picture: row.picture ?? undefined,
-    fields: JSON.parse(row.fieldsJson),
+    fields: normalizePersonnelFields(JSON.parse(row.fieldsJson)),
     createdBy: row.createdBy ?? undefined,
     createdAt: row.createdAt.toISOString(),
     isUserCreated: row.isUserCreated,

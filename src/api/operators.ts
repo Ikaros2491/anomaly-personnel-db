@@ -31,10 +31,10 @@ export async function setOperatorAdministratorApi(username: string, isAdministra
   })
 }
 
-export async function setOperatorDeepAccessApi(username: string, deepAccess: boolean) {
-  return apiRequest('/api/operators/' + encodeURIComponent(username) + '/deep-access', {
+export async function setOperatorContainmentAccessApi(username: string, containmentAccess: boolean) {
+  return apiRequest('/api/operators/' + encodeURIComponent(username) + '/containment-access', {
     method: 'PATCH',
-    body: JSON.stringify({ deepAccess }),
+    body: JSON.stringify({ containmentAccess }),
   })
 }
 

@@ -32,7 +32,7 @@ function buildScpFields(submission: ScpSubmission, fileAuthor: string) {
       label: CONTAINMENT_PROCEDURES_FIELD_LABEL,
       value: submission.containmentProcedures.trim(),
       minClearance: 1 as const,
-      requiresDeepAccess: true,
+      requiresContainmentAccess: true,
     },
     { label: 'File Author', value: fileAuthor, minClearance: 1 as const },
   ]

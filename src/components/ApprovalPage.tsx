@@ -142,10 +142,10 @@ export function ApprovalPage({ onBack }: ApprovalPageProps) {
                   </p>
                   <p className="approval-item-meta">
                     Current: CL{request.currentClearance}
-                    {request.currentDeepAccess ? ' + Deep Access' : ''} → Requested: CL
+                    {request.currentContainmentAccess ? ' + Containment Access' : ''} → Requested: CL
                     {request.requestedClearance} —{' '}
                     {CLEARANCE_LABELS[request.requestedClearance]}
-                    {request.requestDeepAccess ? ' + Deep Access' : ''} — Submitted{' '}
+                    {request.requestContainmentAccess ? ' + Containment Access' : ''} — Submitted{' '}
                     {formatDate(request.submittedAt)}
                   </p>
                   <dl className="approval-preview-fields">
@@ -210,7 +210,7 @@ export function ApprovalPage({ onBack }: ApprovalPageProps) {
                       <div className="approval-preview-row" key={field.label}>
                         <dt>
                           {field.label}
-                          {field.requiresDeepAccess ? ' (Deep Access)' : ''}
+                          {field.requiresContainmentAccess ? ' (Containment Access)' : ''}
                         </dt>
                         <dd>{field.value}</dd>
                       </div>

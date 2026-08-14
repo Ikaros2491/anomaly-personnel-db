@@ -168,12 +168,12 @@ export function EditScpForm({ record, onCancel, onSaved }: EditScpFormProps) {
             Containment Procedures (Defection)
             <textarea
               onChange={(event) => updateField('containmentProcedures', event.target.value)}
-              placeholder="Visible only to Deep Access operators and administrators."
+              placeholder="Visible only to Containment Access operators and administrators."
               rows={4}
               value={form.containmentProcedures}
             />
             <span className="hint">
-              This section is redacted unless the viewing operator has Deep Access (admins always see it).
+              This section is redacted unless the viewing operator has Containment Access (admins always see it).
             </span>
           </label>
         </div>

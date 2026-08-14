@@ -14,7 +14,7 @@ export const BUILTIN_PERSONNEL = [
         value:
           'Subject retains full recall of redacted documents upon visual contact. Mandatory amnestic cycle every 72 hours. No unsupervised archive access. If cognitive cascade exceeds threshold: administer Class-G amnestics, isolate from all textual media, and authorize lethal force only under Site Director order.',
         minClearance: 3,
-        requiresDeepAccess: true,
+        requiresContainmentAccess: true,
       },
       {
         label: 'Psychological Evaluation',
@@ -44,7 +44,7 @@ export const BUILTIN_PERSONNEL = [
         value:
           'Subject involuntarily displaces 0.3–1.2m when startled. Standard restraints ineffective. Held in dimensional anchor cell 7-C.',
         minClearance: 3,
-        requiresDeepAccess: true,
+        requiresContainmentAccess: true,
       },
       {
         label: 'Psychological Evaluation',
@@ -68,7 +68,7 @@ export const BUILTIN_PERSONNEL = [
         value:
           'Subject dampens minor anomalous signatures within 12m radius. Effect scales with emotional state. Monitoring only.',
         minClearance: 3,
-        requiresDeepAccess: true,
+        requiresContainmentAccess: true,
       },
       {
         label: 'Psychological Evaluation',
@@ -97,7 +97,7 @@ export const BUILTIN_PERSONNEL = [
         value:
           'Subject experiences localized temporal desync (±4 seconds). Classified executive exemption. Personal chronometer mandatory.',
         minClearance: 3,
-        requiresDeepAccess: true,
+        requiresContainmentAccess: true,
       },
       {
         label: 'Psychological Evaluation',

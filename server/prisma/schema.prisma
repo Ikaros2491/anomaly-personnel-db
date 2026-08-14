@@ -15,7 +15,8 @@ model User {
   clearance         Int
   badgeId           String
   isAdministrator   Boolean            @default(false)
-  deepAccess        Boolean            @default(false)
+  // Mapped to legacy column name so live SQLite data is preserved.
+  containmentAccess Boolean            @default(false) @map("deepAccess")
   isSystem          Boolean            @default(false)
   deactivated       Boolean            @default(false)
   createdAt         DateTime           @default(now())
@@ -28,7 +29,8 @@ model ClearanceRequest {
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   username           String
   requestedClearance Int
-  requestDeepAccess  Boolean  @default(false)
+  // Mapped to legacy column name so live SQLite data is preserved.
+  requestContainmentAccess Boolean  @default(false) @map("requestDeepAccess")
   name               String
   rank               String
   job                String

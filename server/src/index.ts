@@ -75,7 +75,7 @@ app.post('/api/auth/login', async (req, res) => {
     clearance: user.clearance,
     badgeId: user.badgeId,
     isAdministrator: user.isAdministrator,
-    deepAccess: user.deepAccess,
+    containmentAccess: user.containmentAccess,
   }
 
   setAuthCookie(res, session)
@@ -131,7 +131,7 @@ app.post('/api/signup', async (req, res) => {
       clearance: 1,
       badgeId: nextBadgeId(userCount),
       isAdministrator: false,
-      deepAccess: false,
+      containmentAccess: false,
       isSystem: false,
       deactivated: false,
     },
@@ -305,6 +305,7 @@ app.post('/api/clearance-requests', requireAuth, async (req, res) => {
 
   const {
     requestedClearance,
+    requestContainmentAccess,
     requestDeepAccess,
     name,
     rank,
@@ -312,6 +313,8 @@ app.post('/api/clearance-requests', requireAuth, async (req, res) => {
     notes,
   } = req.body as {
     requestedClearance?: number
+    requestContainmentAccess?: boolean
+    /** @deprecated */
     requestDeepAccess?: boolean
     name?: string
     rank?: string
@@ -324,7 +327,7 @@ app.post('/api/clearance-requests', requireAuth, async (req, res) => {
   const trimmedJob = job?.trim() ?? ''
   const trimmedNotes = notes?.trim() ?? ''
   const clearance = Number(requestedClearance)
-  const wantsDeepAccess = Boolean(requestDeepAccess)
+  const wantsContainmentAccess = Boolean(requestContainmentAccess ?? requestDeepAccess)
 
   if (!trimmedName || !trimmedRank || !trimmedJob || !trimmedNotes) {
     res.status(400).json({ error: 'Name, rank, job, and notes are required.' })
@@ -337,12 +340,12 @@ app.post('/api/clearance-requests', requireAuth, async (req, res) => {
   }
 
   const isClearanceUpgrade = clearance > session.clearance
-  const isDeepAccessUpgrade = wantsDeepAccess && !session.deepAccess
+  const isContainmentAccessUpgrade = wantsContainmentAccess && !session.containmentAccess
 
-  if (!isClearanceUpgrade && !isDeepAccessUpgrade) {
+  if (!isClearanceUpgrade && !isContainmentAccessUpgrade) {
     res.status(400).json({
       error:
-        'Request a higher clearance than you currently hold, and/or Deep Access if you do not already have it.',
+        'Request a higher clearance than you currently hold, and/or Containment Access if you do not already have it.',
     })
     return
   }
@@ -363,7 +366,7 @@ app.post('/api/clearance-requests', requireAuth, async (req, res) => {
       userId: session.userId,
       username: session.username,
       requestedClearance: clearance,
-      requestDeepAccess: wantsDeepAccess,
+      requestContainmentAccess: wantsContainmentAccess,
       name: trimmedName,
       rank: trimmedRank,
       job: trimmedJob,
@@ -378,7 +381,7 @@ app.post('/api/clearance-requests', requireAuth, async (req, res) => {
       userId: created.userId,
       username: created.username,
       requestedClearance: created.requestedClearance,
-      requestDeepAccess: created.requestDeepAccess,
+      requestContainmentAccess: created.requestContainmentAccess,
       name: created.name,
       rank: created.rank,
       job: created.job,
@@ -402,7 +405,7 @@ app.get('/api/clearance-requests/mine', requireAuth, async (req, res) => {
           userId: request.userId,
           username: request.username,
           requestedClearance: request.requestedClearance,
-          requestDeepAccess: request.requestDeepAccess,
+          requestContainmentAccess: request.requestContainmentAccess,
           name: request.name,
           rank: request.rank,
           job: request.job,
@@ -426,9 +429,9 @@ app.get('/api/clearance-requests/pending', requireAdmin, async (_req, res) => {
       username: request.username,
       displayName: request.user.displayName,
       currentClearance: request.user.clearance,
-      currentDeepAccess: request.user.deepAccess,
+      currentContainmentAccess: request.user.containmentAccess,
       requestedClearance: request.requestedClearance,
-      requestDeepAccess: request.requestDeepAccess,
+      requestContainmentAccess: request.requestContainmentAccess,
       name: request.name,
       rank: request.rank,
       job: request.job,
@@ -457,7 +460,7 @@ app.post('/api/clearance-requests/:id/approve', requireAdmin, async (req, res) =
     where: { id: user.id },
     data: {
       clearance: Math.max(user.clearance, request.requestedClearance),
-      deepAccess: request.requestDeepAccess ? true : user.deepAccess,
+      containmentAccess: request.requestContainmentAccess ? true : user.containmentAccess,
     },
   })
 
@@ -489,7 +492,7 @@ app.get('/api/operators', requireAdmin, async (req, res) => {
       badgeId: user.badgeId,
       source: user.isSystem ? 'system' : 'approved',
       isAdministrator: user.isAdministrator,
-      deepAccess: user.deepAccess,
+      containmentAccess: user.containmentAccess,
       deactivated: user.deactivated,
       canDelete: !user.isSystem && !user.isAdministrator,
       canModify: !user.isAdministrator,
@@ -498,8 +501,8 @@ app.get('/api/operators', requireAdmin, async (req, res) => {
         user.isAdministrator &&
         user.username !== session.username &&
         !user.deactivated,
-      canGrantDeepAccess: !user.deepAccess && !user.deactivated,
-      canRevokeDeepAccess: user.deepAccess && !user.deactivated && !user.isAdministrator,
+      canGrantContainmentAccess: !user.containmentAccess && !user.deactivated,
+      canRevokeContainmentAccess: user.containmentAccess && !user.deactivated && !user.isAdministrator,
     })),
   })
 })
@@ -584,9 +587,13 @@ app.patch('/api/operators/:username/administrator', requireAdmin, async (req, re
   res.json({ ok: true })
 })
 
-app.patch('/api/operators/:username/deep-access', requireAdmin, async (req, res) => {
+async function setOperatorContainmentAccess(
+  req: express.Request,
+  res: express.Response,
+) {
   const { username } = req.params
-  const { deepAccess } = req.body as { deepAccess?: boolean }
+  const body = req.body as { containmentAccess?: boolean; deepAccess?: boolean }
+  const containmentAccess = body.containmentAccess ?? body.deepAccess
 
   const user = await prisma.user.findUnique({ where: { username } })
   if (!user || user.deactivated) {
@@ -594,7 +601,7 @@ app.patch('/api/operators/:username/deep-access', requireAdmin, async (req, res)
     return
   }
 
-  // Administrators already bypass Deep Access; keep the flag unset for them.
+  // Administrators already bypass Containment Access; keep the flag unset for them.
   if (user.isAdministrator) {
     res.status(400).json({ error: 'Administrators already have unrestricted file access.' })
     return
@@ -602,13 +609,17 @@ app.patch('/api/operators/:username/deep-access', requireAdmin, async (req, res)
 
   await prisma.user.update({
     where: { username },
-    data: { deepAccess: Boolean(deepAccess) },
+    data: { containmentAccess: Boolean(containmentAccess) },
   })
 
   await prisma.clearanceRequest.deleteMany({ where: { userId: user.id } })
 
   res.json({ ok: true })
-})
+}
+
+app.patch('/api/operators/:username/containment-access', requireAdmin, setOperatorContainmentAccess)
+// Legacy path kept so older clients keep working during deploy.
+app.patch('/api/operators/:username/deep-access', requireAdmin, setOperatorContainmentAccess)
 
 app.patch('/api/operators/:username/password', requireDoll, async (req, res) => {
   const { username } = req.params

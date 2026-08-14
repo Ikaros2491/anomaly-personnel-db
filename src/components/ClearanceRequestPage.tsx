@@ -68,10 +68,10 @@ export function ClearanceRequestPage({ onBack }: ClearanceRequestPageProps) {
     }
 
     const isClearanceUpgrade = form.requestedClearance > session.clearance
-    const isDeepAccessUpgrade = form.requestDeepAccess && !session.deepAccess
-    if (!isClearanceUpgrade && !isDeepAccessUpgrade) {
+    const isContainmentAccessUpgrade = form.requestContainmentAccess && !session.containmentAccess
+    if (!isClearanceUpgrade && !isContainmentAccessUpgrade) {
       setError(
-        'Request a higher clearance than your current level, and/or Deep Access if you do not already have it.',
+        'Request a higher clearance than your current level, and/or Containment Access if you do not already have it.',
       )
       return
     }
@@ -98,7 +98,7 @@ export function ClearanceRequestPage({ onBack }: ClearanceRequestPageProps) {
             <p className="system-sub">
               Operator: {session.displayName} — Clearance {session.clearance} [
               {CLEARANCE_LABELS[session.clearance]}]
-              {session.deepAccess ? ' + DEEP ACCESS' : ''}
+              {session.containmentAccess ? ' + CONTAINMENT ACCESS' : ''}
             </p>
           </div>
         </div>
@@ -110,7 +110,7 @@ export function ClearanceRequestPage({ onBack }: ClearanceRequestPageProps) {
       <section className="approval-intro panel">
         <h1>Request Higher Clearance</h1>
         <p>
-          New accounts start at CL1. Submit a request for elevated clearance and/or Deep Access.
+          New accounts start at CL1. Submit a request for elevated clearance and/or Containment Access.
           An administrator will review your name, rank, job, and justification.
         </p>
         {loading && <p className="hint">Checking existing requests...</p>}
@@ -138,7 +138,7 @@ export function ClearanceRequestPage({ onBack }: ClearanceRequestPageProps) {
               <dt>Requested Clearance</dt>
               <dd>
                 {pending.requestedClearance} — {CLEARANCE_LABELS[pending.requestedClearance]}
-                {pending.requestDeepAccess ? ' + Deep Access' : ''}
+                {pending.requestContainmentAccess ? ' + Containment Access' : ''}
               </dd>
             </div>
             <div className="approval-preview-row">
@@ -182,17 +182,17 @@ export function ClearanceRequestPage({ onBack }: ClearanceRequestPageProps) {
                 </select>
               </label>
 
-              <label className="clearance-deep-access-toggle">
-                <span>Request Deep Access</span>
+              <label className="clearance-containment-access-toggle">
+                <span>Request Containment Access</span>
                 <input
-                  checked={form.requestDeepAccess}
-                  disabled={session.deepAccess}
-                  onChange={(event) => updateField('requestDeepAccess', event.target.checked)}
+                  checked={form.requestContainmentAccess}
+                  disabled={session.containmentAccess}
+                  onChange={(event) => updateField('requestContainmentAccess', event.target.checked)}
                   type="checkbox"
                 />
                 <span className="hint">
-                  {session.deepAccess
-                    ? 'You already have Deep Access.'
+                  {session.containmentAccess
+                    ? 'You already have Containment Access.'
                     : 'Required to view Containment Procedures sections.'}
                 </span>
               </label>
@@ -231,7 +231,7 @@ export function ClearanceRequestPage({ onBack }: ClearanceRequestPageProps) {
                 Notes
                 <textarea
                   onChange={(event) => updateField('notes', event.target.value)}
-                  placeholder="Explain why you need this clearance and/or Deep Access..."
+                  placeholder="Explain why you need this clearance and/or Containment Access..."
                   rows={5}
                   value={form.notes}
                 />

@@ -204,12 +204,12 @@ export function AddScpForm({ onBack }: AddScpFormProps) {
             Containment Procedures (Defection)
             <textarea
               onChange={(event) => updateField('containmentProcedures', event.target.value)}
-              placeholder="Protocols if subject defects or must be terminated/contained... Visible only to Deep Access operators and administrators."
+              placeholder="Protocols if subject defects or must be terminated/contained... Visible only to Containment Access operators and administrators."
               rows={4}
               value={form.containmentProcedures}
             />
             <span className="hint">
-              This section is redacted unless an administrator grants Deep Access.
+              This section is redacted unless an administrator grants Containment Access.
             </span>
           </label>
         </div>
