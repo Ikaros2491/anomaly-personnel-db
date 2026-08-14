@@ -12,18 +12,35 @@ interface PersonnelFileProps {
   onUpdated?: (record: PersonnelRecord) => void
 }
 
+function RedactionBar({
+  length,
+  className = '',
+  label = 'Redacted',
+}: {
+  length: number
+  className?: string
+  label?: string
+}) {
+  // Full-block characters wrap like normal text, so long redactions don't blow out mobile layout.
+  const blocks = '█'.repeat(Math.max(length, 3))
+
+  return (
+    <span
+      aria-label={label}
+      className={`scp-redaction ${className}`.trim()}
+      title="REDACTED"
+    >
+      {blocks}
+    </span>
+  )
+}
+
 function renderClearanceTaggedText(text: string, clearance: number, isAdministrator: boolean) {
   const segments = parseClearanceTaggedText(text, clearance, isAdministrator)
 
   return segments.map((segment, index) =>
     segment.type === 'redacted' ? (
-      <span
-        aria-label="Redacted"
-        className="scp-redaction"
-        key={`redacted-${index}`}
-        style={{ ['--redaction-ch' as string]: String(segment.length) }}
-        title="REDACTED"
-      />
+      <RedactionBar key={`redacted-${index}`} length={segment.length} />
     ) : (
       <span key={`text-${index}`}>{segment.value}</span>
     ),
@@ -40,11 +57,10 @@ function FieldRow({ field, session }: { field: PersonnelField; session: AuthSess
       <div className="field-row field-row--locked">
         <dt>{field.label}</dt>
         <dd>
-          <span
-            aria-label="Redacted — Containment Access required"
-            className="scp-redaction scp-redaction--block"
-            style={{ ['--redaction-ch' as string]: '28' }}
-            title="REDACTED — CONTAINMENT ACCESS REQUIRED"
+          <RedactionBar
+            className="scp-redaction--block"
+            label="Redacted — Containment Access required"
+            length={32}
           />
           <span className="scp-redaction-caption">Containment Access required</span>
         </dd>

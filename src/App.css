@@ -197,6 +197,8 @@
     0 0 20px rgba(0, 0, 0, 0.45);
   padding: 1.25rem;
   margin-bottom: 1rem;
+  max-width: 100%;
+  overflow-wrap: break-word;
 }
 
 .login-form {
@@ -395,27 +397,30 @@ input:focus {
   font-size: 0.82rem;
 }
 
-/* SCP wiki–style solid black redaction bars for [Cn] tags */
+/* SCP wiki–style solid black redaction bars for [Cn] tags.
+   Uses wrapping block characters so long reded don't overflow on mobile. */
 .scp-redaction {
-  display: inline-block;
-  vertical-align: -0.18em;
-  height: 1.05em;
-  width: calc(var(--redaction-ch, 4) * 0.62ch);
-  min-width: 2.4ch;
-  max-width: 100%;
-  margin: 0 0.12em;
+  display: inline;
+  margin: 0 0.05em;
+  padding: 0.05em 0;
   background: #000;
+  color: #000;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
   border-radius: 1px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.9);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  overflow-wrap: anywhere;
+  word-break: break-all;
   user-select: none;
   cursor: default;
 }
 
 .scp-redaction--block {
-  width: min(100%, calc(var(--redaction-ch, 28) * 0.62ch));
-  height: 1.15em;
+  display: inline-block;
+  max-width: 100%;
   margin: 0 0 0.35rem;
-  vertical-align: middle;
+  word-break: break-all;
 }
 
 .scp-redaction-caption {
@@ -610,14 +615,17 @@ textarea:focus {
   margin: 0;
   display: grid;
   gap: 0.75rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .field-row {
   display: grid;
-  grid-template-columns: minmax(140px, 200px) 1fr;
+  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
   gap: 0.75rem;
   padding: 0.5rem 0;
   border-bottom: 1px dashed rgba(80, 180, 100, 0.12);
+  min-width: 0;
 }
 
 .field-row dt {
@@ -630,6 +638,12 @@ textarea:focus {
   margin: 0;
   color: #d7ffe0;
   font-size: 0.92rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
+  line-height: 1.55;
 }
 
 .field-row--locked dd {
