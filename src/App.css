@@ -395,6 +395,37 @@ input:focus {
   font-size: 0.82rem;
 }
 
+/* SCP wiki–style solid black redaction bars for [Cn] tags */
+.scp-redaction {
+  display: inline-block;
+  vertical-align: -0.18em;
+  height: 1.05em;
+  width: calc(var(--redaction-ch, 4) * 0.62ch);
+  min-width: 2.4ch;
+  max-width: 100%;
+  margin: 0 0.12em;
+  background: #000;
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.9);
+  user-select: none;
+  cursor: default;
+}
+
+.scp-redaction--block {
+  width: min(100%, calc(var(--redaction-ch, 28) * 0.62ch));
+  height: 1.15em;
+  margin: 0 0 0.35rem;
+  vertical-align: middle;
+}
+
+.scp-redaction-caption {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6a9a72;
+}
+
 .add-form {
   margin-bottom: 0;
 }
@@ -602,7 +633,7 @@ textarea:focus {
 }
 
 .field-row--locked dd {
-  color: #ff8080;
+  color: #8fd89a;
 }
 
 .redacted {

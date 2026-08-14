@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { deletePersonnelApi, isUserCreatedRecordApi } from '../api/personnel'
-import { applyClearanceTags } from '../data/clearanceTags'
+import { parseClearanceTaggedText } from '../data/clearanceTags'
 import { canViewContainmentAccess, getAccessLabel } from '../data/access'
 import { EditScpForm } from './EditScpForm'
 import type { AuthSession, PersonnelField, PersonnelRecord } from '../types'
@@ -13,16 +13,19 @@ interface PersonnelFileProps {
 }
 
 function renderClearanceTaggedText(text: string, clearance: number, isAdministrator: boolean) {
-  const parsed = applyClearanceTags(text, clearance, isAdministrator)
-  const parts = parsed.split(/(\[REDACTED\])/g)
+  const segments = parseClearanceTaggedText(text, clearance, isAdministrator)
 
-  return parts.map((part, index) =>
-    part === '[REDACTED]' ? (
-      <span className="redacted" key={`redacted-${index}`}>
-        [REDACTED]
-      </span>
+  return segments.map((segment, index) =>
+    segment.type === 'redacted' ? (
+      <span
+        aria-label="Redacted"
+        className="scp-redaction"
+        key={`redacted-${index}`}
+        style={{ ['--redaction-ch' as string]: String(segment.length) }}
+        title="REDACTED"
+      />
     ) : (
-      <span key={`text-${index}`}>{part}</span>
+      <span key={`text-${index}`}>{segment.value}</span>
     ),
   )
 }
@@ -37,7 +40,13 @@ function FieldRow({ field, session }: { field: PersonnelField; session: AuthSess
       <div className="field-row field-row--locked">
         <dt>{field.label}</dt>
         <dd>
-          <span className="redacted">[REDACTED — CONTAINMENT ACCESS REQUIRED]</span>
+          <span
+            aria-label="Redacted — Containment Access required"
+            className="scp-redaction scp-redaction--block"
+            style={{ ['--redaction-ch' as string]: '28' }}
+            title="REDACTED — CONTAINMENT ACCESS REQUIRED"
+          />
+          <span className="scp-redaction-caption">Containment Access required</span>
         </dd>
       </div>
     )
