@@ -2,6 +2,9 @@
   max-width: 960px;
   margin: 0 auto;
   padding: 2rem 1.25rem 3rem;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: clip;
 }
 
 .welcome-page {
@@ -397,30 +400,35 @@ input:focus {
   font-size: 0.82rem;
 }
 
-/* SCP wiki–style solid black redaction bars for [Cn] tags.
-   Uses wrapping block characters so long reded don't overflow on mobile. */
+/* SCP wiki-style solid black redaction bars for [Cn] tags.
+   Rendered as short chips so they wrap cleanly inside field text. */
 .scp-redaction {
   display: inline;
   margin: 0 0.05em;
-  padding: 0.05em 0;
-  background: #000;
-  color: #000;
-  letter-spacing: -0.04em;
-  line-height: 1.15;
-  border-radius: 1px;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  overflow-wrap: anywhere;
-  word-break: break-all;
+  line-height: inherit;
   user-select: none;
   cursor: default;
+}
+
+.scp-redaction-chip {
+  display: inline-block;
+  width: 3.25ch;
+  height: 0.95em;
+  margin: 0.08em 0.1em;
+  vertical-align: -0.12em;
+  background: #000;
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px #000;
 }
 
 .scp-redaction--block {
   display: inline-block;
   max-width: 100%;
   margin: 0 0 0.35rem;
-  word-break: break-all;
+}
+
+.scp-redaction--block .scp-redaction-chip {
+  width: 4ch;
 }
 
 .scp-redaction-caption {
@@ -521,6 +529,8 @@ textarea:focus {
   display: flex;
   gap: 1rem;
   align-items: flex-start;
+  min-width: 0;
+  flex: 1;
 }
 
 .file-photo {
@@ -576,11 +586,25 @@ textarea:focus {
 
 .personnel-file .file-header {
   display: flex;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.85rem;
   margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid rgba(80, 180, 100, 0.2);
+}
+
+@media (min-width: 720px) {
+  .personnel-file .file-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .clearance-badge {
+    flex: 0 1 16rem;
+    text-align: right;
+  }
 }
 
 .file-label {
@@ -594,6 +618,7 @@ textarea:focus {
   margin: 0.25rem 0;
   color: #d7ffe0;
   font-size: 1.35rem;
+  overflow-wrap: break-word;
 }
 
 .file-id {
@@ -606,9 +631,12 @@ textarea:focus {
   font-size: 0.78rem;
   color: #8fd89a;
   border: 1px solid rgba(80, 180, 100, 0.35);
-  padding: 0.45rem 0.6rem;
-  align-self: flex-start;
-  white-space: nowrap;
+  padding: 0.55rem 0.7rem;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .field-list {
@@ -623,7 +651,7 @@ textarea:focus {
   display: grid;
   grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
   gap: 0.75rem;
-  padding: 0.5rem 0;
+  padding: 0.65rem 0;
   border-bottom: 1px dashed rgba(80, 180, 100, 0.12);
   min-width: 0;
 }
@@ -640,8 +668,8 @@ textarea:focus {
   font-size: 0.92rem;
   min-width: 0;
   max-width: 100%;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
   white-space: pre-wrap;
   line-height: 1.55;
 }
@@ -688,8 +716,16 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
-  .personnel-file .file-header {
-    flex-direction: column;
+  .screen {
+    padding: 1.25rem 0.9rem 2.5rem;
+  }
+
+  .panel {
+    padding: 1rem;
+  }
+
+  .clearance-badge {
+    font-size: 0.74rem;
   }
 }
 

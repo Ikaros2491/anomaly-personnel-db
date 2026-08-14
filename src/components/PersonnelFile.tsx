@@ -21,16 +21,14 @@ function RedactionBar({
   className?: string
   label?: string
 }) {
-  // Full-block characters wrap like normal text, so long redactions don't blow out mobile layout.
-  const blocks = '█'.repeat(Math.max(length, 3))
+  // Short chips wrap like words without stretching the personnel file layout.
+  const chipCount = Math.max(1, Math.ceil(length / 5))
 
   return (
-    <span
-      aria-label={label}
-      className={`scp-redaction ${className}`.trim()}
-      title="REDACTED"
-    >
-      {blocks}
+    <span aria-label={label} className={`scp-redaction ${className}`.trim()} title="REDACTED">
+      {Array.from({ length: chipCount }, (_, index) => (
+        <span aria-hidden="true" className="scp-redaction-chip" key={index} />
+      ))}
     </span>
   )
 }
